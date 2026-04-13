@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import MapboxViewer from '../map/MapboxViewer';
 import PjuBottomSheet from '../mobile/PjuBottomSheet';
-import { MapPin } from 'lucide-react';
+import FilterBottomSheet from '../mobile/FilterBottomSheet';
+import { MapPin, SlidersHorizontal } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import GlobalSearch from '../ui/GlobalSearch';
 
 const MobileLayout: React.FC = () => {
+  const [isFilterOpen, setFilterOpen] = useState(false);
+
   return (
     <div className="h-screen w-full relative">
       <MapboxViewer />
@@ -31,10 +34,17 @@ const MobileLayout: React.FC = () => {
           >
             <MapPin size={20} />
           </button>
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="h-12 w-12 rounded-full bg-slate-800/90 backdrop-blur-md border border-slate-600 flex items-center justify-center text-white shadow-xl hover:bg-slate-700 transition-colors"
+          >
+            <SlidersHorizontal size={20} />
+          </button>
         </div>
       </div>
 
       <PjuBottomSheet />
+      <FilterBottomSheet open={isFilterOpen} onDismiss={() => setFilterOpen(false)} />
     </div>
   );
 };

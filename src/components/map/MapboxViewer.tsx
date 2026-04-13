@@ -31,7 +31,7 @@ const MapboxViewer: React.FC = () => {
       style: basemapStyle,
       center: [111.88, -7.15], // Bojonegoro roughly
       zoom: 10,
-      touchZoomRotate: false,
+      touchZoomRotate: true,
     });
 
     const addSourcesAndLayers = () => {
@@ -202,6 +202,45 @@ const MapboxViewer: React.FC = () => {
           });
         }
 
+        // 4. LABEL TITIK — muncul hanya saat zoom sangat dekat
+        if (!m.getLayer('points-label')) {
+          m.addLayer({
+            id: 'points-label',
+            type: 'symbol',
+            source: 'all-points',
+            minzoom: 15,
+            layout: {
+              'text-field': [
+                'case',
+                ['==', ['get', '_sourceTable'], 'lampu'],
+                ['coalesce', ['get', 'kode'], ''],
+                ['==', ['get', '_sourceTable'], 'panel'],
+                ['coalesce', ['get', 'nama_pelanggan'], ''],
+                ''
+              ],
+              'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+              'text-size': ['interpolate', ['linear'], ['zoom'], 15, 10, 18, 13],
+              'text-anchor': 'top',
+              'text-offset': [0, 0.8],
+              'text-allow-overlap': false,
+              'text-ignore-placement': false,
+              'text-max-width': 12,
+            },
+            paint: {
+              'text-color': '#ffffff',
+              'text-halo-color': [
+                'match',
+                ['get', '_sourceTable'],
+                'lampu', '#f39d12',
+                'panel', '#3498db',
+                '#000000'
+              ],
+              'text-halo-width': 1.5,
+              'text-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.5, 1],
+            }
+          });
+        }
+
         applyFilters();
       } catch (err) {
         console.error("Failed to add sources and layers to map:", err);
@@ -279,7 +318,11 @@ const MapboxViewer: React.FC = () => {
     }
 
     // Safe application of mapbox filter. If it's just ['all'], we set null.
-    map.current.setFilter('points-layer', filterList.length > 1 ? filterList : null);
+    const resolvedFilter = filterList.length > 1 ? filterList : null;
+    map.current.setFilter('points-layer', resolvedFilter);
+    if (map.current.getLayer('points-label')) {
+      map.current.setFilter('points-label', resolvedFilter);
+    }
 
     // Update displayed count to match visible features
     if (mapDataRef.current) {

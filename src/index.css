@@ -11,4 +11,147 @@
   }
 }
 
-/* Custom dark mode mapbox popups or custom styles can go here */
+/* ─── react-spring-bottom-sheet: dark theme to match DesktopPopup ─── */
+[data-rsbs-overlay] {
+  z-index: 30;
+}
+
+[data-rsbs-backdrop] {
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+[data-rsbs-root] {
+  --rsbs-bg: rgba(15, 23, 42, 0.97);            /* slate-900 */
+  --rsbs-handle-bg: rgba(100, 116, 139, 0.5);   /* slate-500/50 */
+  --rsbs-max-w: auto;
+  --rsbs-ml: env(safe-area-inset-left);
+  --rsbs-mr: env(safe-area-inset-right);
+  --rsbs-overlay-rounded: 20px;
+}
+
+/* Sheet body container */
+[data-rsbs-scroll] {
+  background: var(--rsbs-bg);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Header area */
+[data-rsbs-header] {
+  background: rgba(15, 23, 42, 1);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5); /* slate-700/50 */
+  padding: 12px 20px;
+  box-shadow: none;
+}
+
+/* Override text colours inside the bottom sheet */
+[data-rsbs-overlay] h2,
+[data-rsbs-overlay] h3 {
+  color: #f1f5f9; /* slate-100 */
+}
+
+[data-rsbs-overlay] span,
+[data-rsbs-overlay] p {
+  color: #94a3b8; /* slate-400 */
+}
+
+/* Make inner cards / info sections match dark theme */
+[data-rsbs-overlay] .bg-white {
+  background-color: rgba(30, 41, 59, 0.8) !important; /* slate-800 */
+}
+
+[data-rsbs-overlay] .bg-slate-100 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+[data-rsbs-overlay] .bg-slate-50 {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+[data-rsbs-overlay] .border-slate-100,
+[data-rsbs-overlay] .border-slate-200 {
+  border-color: rgba(51, 65, 85, 0.4) !important; /* slate-700/40 */
+}
+
+[data-rsbs-overlay] .text-slate-800 {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+[data-rsbs-overlay] .text-slate-700 {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+[data-rsbs-overlay] .text-slate-600 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+[data-rsbs-overlay] .text-slate-500 {
+  color: #64748b !important; /* slate-500 */
+}
+
+/* Status banners – keep their own colours but darken backgrounds */
+[data-rsbs-overlay] .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+[data-rsbs-overlay] .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+[data-rsbs-overlay] .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+[data-rsbs-overlay] .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.1) !important;
+}
+[data-rsbs-overlay] .border-rose-200 {
+  border-color: rgba(244, 63, 94, 0.25) !important;
+}
+[data-rsbs-overlay] .text-rose-700 {
+  color: #fb7185 !important;
+}
+
+[data-rsbs-overlay] .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+[data-rsbs-overlay] .border-blue-200 {
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+[data-rsbs-overlay] .text-blue-700 {
+  color: #60a5fa !important;
+}
+
+/* Close / action buttons */
+[data-rsbs-overlay] button.bg-slate-100 {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+/* Indigo header icon */
+[data-rsbs-overlay] .bg-indigo-100 {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+[data-rsbs-overlay] .bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+[data-rsbs-overlay] .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Coordinate / mono section */
+[data-rsbs-overlay] .font-mono {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+/* Custom scrollbar for the sheet */
+[data-rsbs-scroll]::-webkit-scrollbar {
+  width: 4px;
+}
+[data-rsbs-scroll]::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 999px;
+}
+[data-rsbs-scroll]::-webkit-scrollbar-track {
+  background: transparent;
+}
