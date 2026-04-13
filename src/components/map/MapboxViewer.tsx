@@ -44,9 +44,12 @@ const MapboxViewer: React.FC = () => {
         const TILESET_ID = 'dhamarar.7ub66eyv';
         const LAYER_NAME = 'batasdesabojonegoro_filtered-896hj9';
         const PALETTE = [
-          '#f87171', '#fb923c', '#fbbf24', '#a3e635',
-          '#4ade80', '#34d399', '#2dd4bf', '#38bdf8',
-          '#818cf8', '#a78bfa', '#e879f9', '#f472b6'
+          '#e6194b', '#3cb44b', '#ffe119', '#4363d8',
+          '#f58231', '#42d4f4', '#f032e6', '#fabed4',
+          '#469990', '#dcbeff', '#9A6324', '#fffac8',
+          '#800000', '#aaffc3', '#808000', '#ffd8b1',
+          '#000075', '#a9a9a9', '#e6beff', '#1abc9c',
+          '#ff6b6b', '#48dbfb', '#ffeaa7', '#6c5ce7',
         ];
 
         // Deterministic hash: same desa name → always same colour
@@ -58,35 +61,44 @@ const MapboxViewer: React.FC = () => {
           return PALETTE[Math.abs(h) % PALETTE.length];
         };
 
-        // Apply colours to all currently visible desa features
-        const colorizeDesaFeatures = () => {
-          if (!m.getSource('batas-desa')) return;
+        // Dynamically build a match expression from loaded vector features
+        const knownDesaNames = new Set<string>();
+        const applyDesaColors = () => {
+          if (!m.getLayer('batas-desa-layer')) return;
           const features = m.querySourceFeatures('batas-desa', { sourceLayer: LAYER_NAME });
+          let hasNew = false;
           features.forEach(f => {
-            const id = f.id as string | number;
-            if (id === undefined || id === null) return;
-            m.setFeatureState(
-              { source: 'batas-desa', sourceLayer: LAYER_NAME, id },
-              { fillColor: getDesaColor(String(id)) }
-            );
+            const name = f.properties?.NAMOBJ || f.properties?.NAMAOBJ;
+            if (name && !knownDesaNames.has(name)) {
+              knownDesaNames.add(name);
+              hasNew = true;
+            }
           });
+          if (!hasNew && knownDesaNames.size > 0) return;
+
+          if (knownDesaNames.size > 0) {
+            const matchExpr: any[] = ['match', ['coalesce', ['get', 'NAMOBJ'], ['get', 'NAMAOBJ']]];
+            knownDesaNames.forEach(name => {
+              matchExpr.push(name, getDesaColor(name));
+            });
+            matchExpr.push('#818cf8'); // fallback
+            m.setPaintProperty('batas-desa-layer', 'fill-color', matchExpr as mapboxgl.ExpressionSpecification);
+          }
         };
 
         if (!m.getSource('batas-desa')) {
           m.addSource('batas-desa', {
             type: 'vector',
             url: `mapbox://${TILESET_ID}`,
-            // promoteId makes NAMAOBJ the stable feature ID across zoom levels
-            promoteId: { [LAYER_NAME]: 'NAMAOBJ' }
           });
 
-          // Colorize when source data arrives and whenever the viewport changes
           m.on('sourcedata', (e: mapboxgl.MapSourceDataEvent) => {
             if (e.sourceId === 'batas-desa' && m.isSourceLoaded('batas-desa')) {
-              colorizeDesaFeatures();
+              applyDesaColors();
             }
           });
-          m.on('moveend', colorizeDesaFeatures);
+          m.on('moveend', applyDesaColors);
+          m.on('idle', applyDesaColors);
         }
 
         if (!m.getLayer('batas-desa-layer')) {
@@ -97,9 +109,8 @@ const MapboxViewer: React.FC = () => {
             'source-layer': LAYER_NAME,
             layout: { visibility: showBatasDesa ? 'visible' : 'none' },
             paint: {
-              // Colour comes from feature-state set by getDesaColor — stable across zoom
-              'fill-color': ['coalesce', ['feature-state', 'fillColor'], '#818cf8'],
-              'fill-opacity': 0.3,
+              'fill-color': '#818cf8',
+              'fill-opacity': 0.2,
               'fill-outline-color': '#ffffff'
             }
           });
@@ -113,9 +124,9 @@ const MapboxViewer: React.FC = () => {
             'source-layer': LAYER_NAME,
             layout: { visibility: showBatasDesa ? 'visible' : 'none' },
             paint: {
-              'line-color': '#ffffff',
-              'line-width': 2,
-              'line-opacity': 0.8
+              'line-color': '#000000',
+              'line-width': 1,
+              'line-opacity': 0.5
             }
           });
         }
@@ -130,10 +141,11 @@ const MapboxViewer: React.FC = () => {
               visibility: showBatasDesa ? 'visible' : 'none',
               'text-field': ['get', 'NAMOBJ'],
               'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-              'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 14, 14],
+              'text-size': ['interpolate', ['linear'], ['zoom'], 9, 7, 14, 10],
               'text-anchor': 'center',
               'text-allow-overlap': false,
               'text-ignore-placement': false,
+              'symbol-avoid-edges': true,
             },
             paint: {
               'text-color': '#ffffff',
