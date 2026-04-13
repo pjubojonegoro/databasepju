@@ -1,0 +1,14 @@
+@import 'mapbox-gl/dist/mapbox-gl.css';
+@import 'react-spring-bottom-sheet/dist/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-50;
+  }
+}
+
+/* Custom dark mode mapbox popups or custom styles can go here */
