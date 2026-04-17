@@ -14,12 +14,12 @@ const MapboxViewer: React.FC = () => {
 
   const {
     setSelectedPoint, flyToState,
-    basemapStyle, showBatasDesa, activeDataset, asetKategori,
+    basemapStyle, showBatasDesa, activeDataset, asetKategori, thpasangFilter,
     setDisplayedCount
   } = useAppStore();
 
   // Keep a ref so applyFilters can always reach the latest state
-  const filterStateRef = useRef({ activeDataset, asetKategori, setDisplayedCount });
+  const filterStateRef = useRef({ activeDataset, asetKategori, thpasangFilter, setDisplayedCount });
 
   const mapDataRef = useRef<{ combinedFeatures: any[], ruasJalanData: any } | null>(null);
 
@@ -324,7 +324,7 @@ const MapboxViewer: React.FC = () => {
   const applyFilters = () => {
     if (!map.current || !map.current.getLayer('points-layer')) return;
 
-    const { activeDataset: ds, asetKategori: kat, setDisplayedCount: setCount } = filterStateRef.current;
+    const { activeDataset: ds, asetKategori: kat, thpasangFilter: thFilter, setDisplayedCount: setCount } = filterStateRef.current;
 
     const filterList: any[] = ['all'];
 
@@ -336,6 +336,10 @@ const MapboxViewer: React.FC = () => {
 
     if (kat !== 'Semua') {
       filterList.push(['==', ['get', 'kategori'], kat]);
+    }
+    
+    if (thFilter !== 'Semua' && thFilter !== '') {
+      filterList.push(['==', ['to-string', ['coalesce', ['get', 'thpasang'], '']], thFilter]);
     }
 
     // Safe application of mapbox filter. If it's just ['all'], we set null.
@@ -350,9 +354,12 @@ const MapboxViewer: React.FC = () => {
       const visible = mapDataRef.current.combinedFeatures.filter((f: any) => {
         const src = f.properties?._sourceTable;
         const kgr = f.properties?.kategori;
+        const th = f.properties?.thpasang?.toString() || '';
+        
         if (ds === 'Lampu' && src !== 'lampu') return false;
         if (ds === 'Panel' && src !== 'panel') return false;
         if (kat !== 'Semua' && kgr !== kat) return false;
+        if (thFilter !== 'Semua' && thFilter !== '' && th !== thFilter) return false;
         return true;
       });
       setCount(visible.length);
@@ -367,9 +374,9 @@ const MapboxViewer: React.FC = () => {
 
   // Keep the ref in sync so applyFilters always uses fresh values
   useEffect(() => {
-    filterStateRef.current = { activeDataset, asetKategori, setDisplayedCount };
+    filterStateRef.current = { activeDataset, asetKategori, thpasangFilter, setDisplayedCount };
     applyFilters();
-  }, [activeDataset, asetKategori]);
+  }, [activeDataset, asetKategori, thpasangFilter]);
 
   useEffect(() => {
     if (map.current) {

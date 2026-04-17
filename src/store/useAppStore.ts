@@ -18,6 +18,8 @@ interface AppState {
   setActiveDataset: (dataset: 'Lampu' | 'Panel' | 'Keduanya') => void;
   asetKategori: 'Semua' | 'PJU' | 'PJL';
   setAsetKategori: (kategori: 'Semua' | 'PJU' | 'PJL') => void;
+  thpasangFilter: string;
+  setThpasangFilter: (year: string) => void;
   displayedCount: number;
   setDisplayedCount: (count: number) => void;
 
@@ -46,6 +48,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   asetKategori: 'Semua',
   setAsetKategori: (kategori) => set({ asetKategori: kategori }),
+
+  thpasangFilter: 'Semua',
+  setThpasangFilter: (year) => set({ thpasangFilter: year }),
 
   displayedCount: 0,
   setDisplayedCount: (count) => set({ displayedCount: count }),

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database } from 'lucide-react';
+import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Sidebar: React.FC = () => {
@@ -9,10 +9,21 @@ const Sidebar: React.FC = () => {
     showBatasDesa, setShowBatasDesa,
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
+    thpasangFilter, setThpasangFilter,
+    globalSearchData,
     displayedCount
   } = useAppStore();
 
   const navigate = useNavigate();
+
+  const availableYears = React.useMemo(() => {
+    const years = new Set<string>();
+    globalSearchData.points.forEach((p: any) => {
+      const val = p.properties?.thpasang;
+      if (val) years.add(val.toString());
+    });
+    return Array.from(years).sort((a,b) => Number(b) - Number(a));
+  }, [globalSearchData.points]);
 
   const basemaps = [
     { id: 'default', label: 'Default', url: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6' },
@@ -128,6 +139,24 @@ const Sidebar: React.FC = () => {
               </label>
             ))}
           </div>
+        </section>
+
+        {/* Tahun Pasang Filter */}
+        <section>
+          <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+            <Calendar size={16} />
+            Tahun Pasang
+          </h2>
+          <select 
+            value={thpasangFilter}
+            onChange={(e) => setThpasangFilter(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
+          >
+            <option value="Semua">Semua Tahun</option>
+            {availableYears.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
         </section>
 
       </div>
