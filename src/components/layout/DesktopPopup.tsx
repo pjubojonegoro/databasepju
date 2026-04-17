@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { MapPin, Info, Settings, Calendar, Activity, X, Clipboard, Navigation2 } from 'lucide-react';
+import { MapPin, Info, Settings, Calendar, Activity, X, Clipboard, Navigation2, Eye } from 'lucide-react';
 
 const DesktopPopup: React.FC = () => {
   const { selectedPoint, setSelectedPoint } = useAppStore();
@@ -96,16 +96,27 @@ const DesktopPopup: React.FC = () => {
           </div>
         </div>
 
-        {/* Rute button */}
-        <a
-          href={gmapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors"
-        >
-          <Navigation2 size={15} />
-          Rute Google Maps
-        </a>
+        {/* Action buttons */}
+        <div className="flex gap-2">
+          <a
+            href={gmapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors"
+          >
+            <Navigation2 size={14} />
+            Rute
+          </a>
+          <a
+            href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selectedPoint.latitude},${selectedPoint.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition-colors"
+          >
+            <Eye size={14} />
+            Street View
+          </a>
+        </div>
       </div>
 
       <style>{`

@@ -210,7 +210,16 @@ const MapboxViewer: React.FC = () => {
           m.on('mouseleave', 'points-layer', () => { m.getCanvas().style.cursor = ''; });
           m.on('click', 'points-layer', (e) => {
             if (!e.features || e.features.length === 0) return;
+            e.originalEvent.stopPropagation();
             setSelectedPoint(e.features[0].properties as any);
+          });
+
+          // Klik di area kosong peta → tutup popup
+          m.on('click', (e) => {
+            const features = m.queryRenderedFeatures(e.point, { layers: ['points-layer'] });
+            if (!features || features.length === 0) {
+              setSelectedPoint(null);
+            }
           });
         }
 

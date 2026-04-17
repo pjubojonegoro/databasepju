@@ -8,7 +8,7 @@ interface AppState {
   triggerFlyTo: (lng: number, lat: number) => void;
   isMobileSheetOpen: boolean;
   setMobileSheetOpen: (isOpen: boolean) => void;
-  
+
   // New States for Map Filters
   basemapStyle: string;
   setBasemapStyle: (styleUrl: string) => void;
@@ -20,7 +20,7 @@ interface AppState {
   setAsetKategori: (kategori: 'Semua' | 'PJU' | 'PJL') => void;
   displayedCount: number;
   setDisplayedCount: (count: number) => void;
-  
+
   globalSearchData: { points: any[], batasDesa: any[], ruasJalan: any[] };
   setGlobalSearchData: (data: { points: any[], batasDesa: any[], ruasJalan: any[] }) => void;
 }
@@ -28,28 +28,28 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   selectedPoint: null,
   setSelectedPoint: (point) => set({ selectedPoint: point, isMobileSheetOpen: !!point }),
-  
+
   flyToState: null,
   triggerFlyTo: (lng, lat) => set({ flyToState: { lng, lat, timestamp: Date.now() } }),
-  
+
   isMobileSheetOpen: false,
   setMobileSheetOpen: (isOpen) => set({ isMobileSheetOpen: isOpen }),
-  
+
   basemapStyle: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6',
   setBasemapStyle: (styleUrl) => set({ basemapStyle: styleUrl }),
-  
+
   showBatasDesa: false,
   setShowBatasDesa: (show) => set({ showBatasDesa: show }),
-  
+
   activeDataset: 'Keduanya', // Changed default to Keduanya if the user wants to see 2 tabel
   setActiveDataset: (dataset) => set({ activeDataset: dataset }),
-  
+
   asetKategori: 'Semua',
   setAsetKategori: (kategori) => set({ asetKategori: kategori }),
-  
+
   displayedCount: 0,
   setDisplayedCount: (count) => set({ displayedCount: count }),
-  
+
   globalSearchData: { points: [], batasDesa: [], ruasJalan: [] },
   setGlobalSearchData: (data) => set({ globalSearchData: data }),
 }));

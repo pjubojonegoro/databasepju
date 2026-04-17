@@ -1,7 +1,7 @@
 import React from 'react';
 import { BottomSheet } from 'react-spring-bottom-sheet';
 import { useAppStore } from '../../store/useAppStore';
-import { MapPin, Info, Settings, Calendar, Activity, X } from 'lucide-react';
+import { MapPin, Info, Settings, Calendar, Activity, X, Navigation2, Eye } from 'lucide-react';
 import 'react-spring-bottom-sheet/dist/style.css';
 
 const PjuBottomSheet: React.FC = () => {
@@ -93,6 +93,28 @@ const PjuBottomSheet: React.FC = () => {
                 Copy
               </button>
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-4">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${selectedPoint.latitude},${selectedPoint.longitude}&travelmode=driving`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors"
+            >
+              <Navigation2 size={16} />
+              Rute
+            </a>
+            <a
+              href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selectedPoint.latitude},${selectedPoint.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 flex-1 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition-colors"
+            >
+              <Eye size={16} />
+              Street View
+            </a>
           </div>
 
         </div>
