@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Database, Package, LogOut, ArrowLeft } from 'lucide-react';
+import { Database, Package, ArrowLeft } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();

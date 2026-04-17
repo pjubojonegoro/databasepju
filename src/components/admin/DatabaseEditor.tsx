@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
-import { ArrowLeft, Save, Search, RefreshCw, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Save, Search, RefreshCw } from 'lucide-react';
 
 type TableMode = 'lampu' | 'panel';
 
