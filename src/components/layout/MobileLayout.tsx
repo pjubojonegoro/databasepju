@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import MapboxViewer from '../map/MapboxViewer';
 import PjuBottomSheet from '../mobile/PjuBottomSheet';
 import FilterBottomSheet from '../mobile/FilterBottomSheet';
-import { MapPin, SlidersHorizontal } from 'lucide-react';
+import { MapPin, SlidersHorizontal, Database } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import GlobalSearch from '../ui/GlobalSearch';
+import { useNavigate } from 'react-router-dom';
 
 const MobileLayout: React.FC = () => {
   const [isFilterOpen, setFilterOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="h-screen w-full relative">
@@ -39,6 +41,12 @@ const MobileLayout: React.FC = () => {
             className="h-12 w-12 rounded-full bg-slate-800/90 backdrop-blur-md border border-slate-600 flex items-center justify-center text-white shadow-xl hover:bg-slate-700 transition-colors"
           >
             <SlidersHorizontal size={20} />
+          </button>
+          <button
+            onClick={() => navigate('/admin/database')}
+            className="h-12 w-12 rounded-full bg-indigo-600/90 backdrop-blur-md border border-indigo-500 flex items-center justify-center text-white shadow-xl hover:bg-indigo-500 transition-colors mt-2"
+          >
+            <Database size={20} />
           </button>
         </div>
       </div>

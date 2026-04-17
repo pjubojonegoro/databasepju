@@ -13,11 +13,50 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
     if (!query || query.length < 2) return [];
     const lowerQuery = query.toLowerCase();
 
-    // Search desa
-    const desa = globalSearchData.batasDesa.filter((d: any) => {
+    // Search desa from points (extract unique desakel)
+    const desaSet = new Map<string, any>();
+    
+    globalSearchData.points.forEach((p: any) => {
+      const desakel = p.properties?.desakel;
+      const kecamatan = p.properties?.kecamatan;
+      if (desakel && typeof desakel === 'string') {
+        const name = desakel.toLowerCase();
+        if (name.includes(lowerQuery)) {
+          const key = `${name}-${kecamatan?.toLowerCase() || ''}`;
+          if (!desaSet.has(key)) {
+            desaSet.set(key, {
+              name: desakel,
+              kecamatan: kecamatan || '',
+              lng: p.geometry.coordinates[0],
+              lat: p.geometry.coordinates[1]
+            });
+          }
+        }
+      }
+    });
+
+    const desaFromPoints = Array.from(desaSet.values()).map(d => ({
+      type: 'desa_point',
+      item: d,
+      name: d.name,
+      desc: `Desa${d.kecamatan ? `, Kec. ${d.kecamatan}` : ''}`
+    }));
+
+    // Search desa from batasDesa (fallback if any populated)
+    const desaFromVector = globalSearchData.batasDesa.filter((d: any) => {
       const name = String(d.properties.NAME_4 || '').toLowerCase();
       return name.includes(lowerQuery);
-    }).slice(0, 5).map((d: any) => ({ type: 'desa', item: d, name: d.properties.NAME_4 || 'Desa', desc: 'Desa' }));
+    }).map((d: any) => ({ type: 'desa', item: d, name: d.properties.NAME_4 || 'Desa', desc: 'Desa' }));
+
+    // Merge desas, deduplicating by name if possible, and slice top 5
+    const mergedDesaMap = new Map<string, any>();
+    [...desaFromPoints, ...desaFromVector].forEach(d => {
+      const lowerName = d.name.toLowerCase();
+      if (!mergedDesaMap.has(lowerName)) {
+        mergedDesaMap.set(lowerName, d);
+      }
+    });
+    const finalDesa = Array.from(mergedDesaMap.values()).slice(0, 5);
 
     // Search ruas jalan
     const ruas = globalSearchData.ruasJalan.filter((r: any) => {
@@ -25,7 +64,7 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
       return name.includes(lowerQuery);
     }).slice(0, 5).map((r: any) => ({ type: 'ruas', item: r, name: r.properties.NAMAJALAN || 'Ruas Jalan', desc: 'Ruas Jalan' }));
 
-    return [...desa, ...ruas];
+    return [...finalDesa, ...ruas];
   }, [query, globalSearchData]);
 
   useEffect(() => {
@@ -43,6 +82,8 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
     if (result.type === 'point') {
       triggerFlyTo(result.item.geometry.coordinates[0], result.item.geometry.coordinates[1]);
       setSelectedPoint(result.item.properties);
+    } else if (result.type === 'desa_point') {
+      triggerFlyTo(result.item.lng, result.item.lat);
     } else if (result.type === 'desa' || result.type === 'ruas') {
       // Just take the first coordinate of the polygon/line ring
       const coords = result.item.geometry.coordinates;

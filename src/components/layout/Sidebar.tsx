@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity } from 'lucide-react';
+import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Sidebar: React.FC = () => {
   const {
@@ -10,6 +11,8 @@ const Sidebar: React.FC = () => {
     asetKategori, setAsetKategori,
     displayedCount
   } = useAppStore();
+
+  const navigate = useNavigate();
 
   const basemaps = [
     { id: 'default', label: 'Default', url: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6' },
@@ -127,6 +130,17 @@ const Sidebar: React.FC = () => {
           </div>
         </section>
 
+      </div>
+
+      {/* Editor Button */}
+      <div className="px-4 py-2 bg-slate-900 border-t border-slate-800">
+        <button
+          onClick={() => navigate('/admin/database')}
+          className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 hover:border-indigo-500 rounded-xl transition-all font-semibold text-sm shadow-sm"
+        >
+          <Database size={16} />
+          Database Editor
+        </button>
       </div>
 
       {/* Statistics Footer */}
