@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
-import { ArrowLeft, Save, Plus, Camera, Image as ImageIcon, MapPin } from 'lucide-react';
+import { ArrowLeft, Save, Camera, Image as ImageIcon, MapPin } from 'lucide-react';
 import exifr from 'exifr';
 
 const PaketDetail: React.FC = () => {
@@ -246,8 +246,8 @@ const PaketDetail: React.FC = () => {
             onClick={saveChanges}
             disabled={Object.keys(edits).length === 0 || isSaving}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm ${Object.keys(edits).length > 0
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
           >
             <Save size={16} />
