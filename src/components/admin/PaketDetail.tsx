@@ -316,22 +316,32 @@ const PaketDetail: React.FC = () => {
     try {
       // Save Lampu
       for (const rowId of editedLampuIds) {
+        const payload = { ...lampuEdits[rowId] };
+        if (paket?.thpasang) {
+           payload.thpasang = paket.thpasang;
+        }
+
         if (rowId.startsWith('new_')) {
-          const { error } = await supabase.from('lampu').insert({ ...lampuEdits[rowId] });
+          const { error } = await supabase.from('lampu').insert(payload);
           if (error) throw error;
         } else {
-          const { error } = await supabase.from('lampu').update(lampuEdits[rowId]).eq('id', rowId);
+          const { error } = await supabase.from('lampu').update(payload).eq('id', rowId);
           if (error) throw error;
         }
       }
 
       // Save Panel
       for (const rowId of editedPanelIds) {
+        const payload = { ...updatedPanelEdits[rowId] };
+        if (paket?.thpasang) {
+           payload.thpasang = paket.thpasang; // Ensure table schema is correct (string or number)
+        }
+
         if (rowId.startsWith('new_')) {
-          const { error } = await supabase.from('panel').insert({ ...updatedPanelEdits[rowId] });
+          const { error } = await supabase.from('panel').insert(payload);
           if (error) throw error;
         } else {
-          const { error } = await supabase.from('panel').update(updatedPanelEdits[rowId]).eq('id', rowId);
+          const { error } = await supabase.from('panel').update(payload).eq('id', rowId);
           if (error) throw error;
         }
       }

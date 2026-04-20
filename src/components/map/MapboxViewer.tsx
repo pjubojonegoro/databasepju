@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { useAppStore } from '../../store/useAppStore';
-import { fetchLampuDataGeoJSON, fetchPanelDataGeoJSON } from '../../services/supabase';
+import { fetchLampuDataGeoJSON, fetchPanelDataGeoJSON, supabase } from '../../services/supabase';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
@@ -14,14 +14,100 @@ const MapboxViewer: React.FC = () => {
 
   const {
     setSelectedPoint, flyToState,
-    basemapStyle, showBatasDesa, activeDataset, asetKategori, thpasangFilter,
-    setDisplayedCount
+    basemapStyle, showBatasDesa, activeDataset, asetKategori, tahunPasang,
+    setDisplayedCount, selectedPoint, isEditMode
   } = useAppStore();
 
   // Keep a ref so applyFilters can always reach the latest state
-  const filterStateRef = useRef({ activeDataset, asetKategori, thpasangFilter, setDisplayedCount });
+  const filterStateRef = useRef({ activeDataset, asetKategori, tahunPasang, setDisplayedCount });
 
   const mapDataRef = useRef<{ combinedFeatures: any[], ruasJalanData: any } | null>(null);
+
+  const draggableMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const selectedPointRef = useRef(selectedPoint);
+
+  useEffect(() => {
+    selectedPointRef.current = selectedPoint;
+  }, [selectedPoint]);
+
+  useEffect(() => {
+    if (!map.current) return;
+    
+    if (!isEditMode || !selectedPoint) {
+      if (draggableMarkerRef.current) {
+        draggableMarkerRef.current.remove();
+        draggableMarkerRef.current = null;
+      }
+      return;
+    }
+
+    if (!draggableMarkerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'w-6 h-6 bg-amber-500/90 rounded-full border-4 border-white shadow-xl cursor-grab hover:scale-110 transition-transform flex items-center justify-center';
+      el.innerHTML = '<div class="w-1.5 h-1.5 bg-white rounded-full"></div>';
+      
+      draggableMarkerRef.current = new mapboxgl.Marker({ 
+        element: el,
+        draggable: true 
+      });
+
+      draggableMarkerRef.current.on('dragstart', () => {
+        el.classList.add('cursor-grabbing');
+        el.classList.remove('cursor-grab');
+      });
+
+      draggableMarkerRef.current.on('dragend', async () => {
+        el.classList.remove('cursor-grabbing');
+        el.classList.add('cursor-grab');
+        
+        const sp = selectedPointRef.current;
+        if (!sp) return;
+        const lngLat = draggableMarkerRef.current?.getLngLat();
+        if (lngLat) {
+           const confirmSave = window.confirm(`Apakah Anda yakin ingin menyimpan posisi baru ini?`);
+           if (confirmSave) {
+              try {
+                 const table = sp._sourceTable as 'lampu' | 'panel';
+                 const { error } = await supabase
+                    .from(table)
+                    .update({ longitude: lngLat.lng, latitude: lngLat.lat })
+                    .eq('id', sp.id);
+                 
+                 if (error) throw error;
+                 
+                 if (mapDataRef.current) {
+                    const features = mapDataRef.current.combinedFeatures;
+                    const idx = features.findIndex((f: any) => f.properties.id === sp.id && f.properties._sourceTable === sp._sourceTable);
+                    if (idx !== -1) {
+                       features[idx].geometry.coordinates = [lngLat.lng, lngLat.lat];
+                       features[idx].properties.longitude = lngLat.lng;
+                       features[idx].properties.latitude = lngLat.lat;
+                       
+                       const source = map.current?.getSource('all-points') as mapboxgl.GeoJSONSource;
+                       if (source) {
+                          source.setData({ type: 'FeatureCollection', features });
+                       }
+                    }
+                 }
+                 
+                 setSelectedPoint({ ...sp, longitude: lngLat.lng, latitude: lngLat.lat });
+              } catch (err: any) {
+                 console.error(err);
+                 alert('Error saving position: ' + err.message);
+                 draggableMarkerRef.current?.setLngLat([sp.longitude, sp.latitude]);
+              }
+           } else {
+              draggableMarkerRef.current?.setLngLat([sp.longitude, sp.latitude]);
+           }
+        }
+      });
+    }
+
+    draggableMarkerRef.current
+      .setLngLat([selectedPoint.longitude, selectedPoint.latitude])
+      .addTo(map.current);
+
+  }, [selectedPoint, isEditMode]);
 
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
@@ -324,7 +410,7 @@ const MapboxViewer: React.FC = () => {
   const applyFilters = () => {
     if (!map.current || !map.current.getLayer('points-layer')) return;
 
-    const { activeDataset: ds, asetKategori: kat, thpasangFilter: thFilter, setDisplayedCount: setCount } = filterStateRef.current;
+    const { activeDataset: ds, asetKategori: kat, tahunPasang: th, setDisplayedCount: setCount } = filterStateRef.current;
 
     const filterList: any[] = ['all'];
 
@@ -337,9 +423,13 @@ const MapboxViewer: React.FC = () => {
     if (kat !== 'Semua') {
       filterList.push(['==', ['get', 'kategori'], kat]);
     }
-    
-    if (thFilter !== 'Semua' && thFilter !== '') {
-      filterList.push(['==', ['to-string', ['coalesce', ['get', 'thpasang'], '']], thFilter]);
+
+    if (th !== 'Semua') {
+      filterList.push([
+        'any',
+        ['==', ['get', 'thpasang'], th],
+        ['==', ['get', 'thpasang'], Number(th)]
+      ]);
     }
 
     // Safe application of mapbox filter. If it's just ['all'], we set null.
@@ -354,12 +444,10 @@ const MapboxViewer: React.FC = () => {
       const visible = mapDataRef.current.combinedFeatures.filter((f: any) => {
         const src = f.properties?._sourceTable;
         const kgr = f.properties?.kategori;
-        const th = f.properties?.thpasang?.toString() || '';
-        
         if (ds === 'Lampu' && src !== 'lampu') return false;
         if (ds === 'Panel' && src !== 'panel') return false;
         if (kat !== 'Semua' && kgr !== kat) return false;
-        if (thFilter !== 'Semua' && thFilter !== '' && th !== thFilter) return false;
+        if (th !== 'Semua' && String(f.properties?.thpasang) !== th) return false;
         return true;
       });
       setCount(visible.length);
@@ -374,9 +462,9 @@ const MapboxViewer: React.FC = () => {
 
   // Keep the ref in sync so applyFilters always uses fresh values
   useEffect(() => {
-    filterStateRef.current = { activeDataset, asetKategori, thpasangFilter, setDisplayedCount };
+    filterStateRef.current = { activeDataset, asetKategori, tahunPasang, setDisplayedCount };
     applyFilters();
-  }, [activeDataset, asetKategori, thpasangFilter]);
+  }, [activeDataset, asetKategori, tahunPasang]);
 
   useEffect(() => {
     if (map.current) {

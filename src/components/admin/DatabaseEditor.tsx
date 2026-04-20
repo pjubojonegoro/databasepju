@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
-import { Save, Search, RefreshCw } from 'lucide-react';
+import { Save, Search, RefreshCw, Trash2, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 
 type TableMode = 'lampu' | 'panel';
 
@@ -19,6 +19,44 @@ const DatabaseEditor: React.FC = () => {
   const rowsPerPage = 50;
   const [totalCount, setTotalCount] = useState(0);
 
+  // Sorting and Filtering
+  const [sortConfig, setSortConfig] = useState<{ column: string, ascending: boolean } | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({});
+  const [filterOptions, setFilterOptions] = useState<Record<string, any[]>>({});
+
+  const fetchFilterOptions = async (tab: TableMode) => {
+    const { data } = await supabase.from(tab).select();
+    if (data) {
+      const options: Record<string, any[]> = {};
+      const cols = tab === 'lampu' 
+        ? ['kode', 'panel', 'kategori', 'jenis_lampu', 'tiang', 'thpasang', 'desakel', 'latitude', 'longitude']
+        : ['id_pelanggan', 'nama_pelanggan', 'kategori', 'no_meter', 'daya', 'jml_lampu', 'total_daya', 'alamat', 'thpasang', 'desakel', 'latitude', 'longitude'];
+        
+      cols.forEach(col => {
+        if (col === 'kode' || col === 'panel') return;
+        const unique = Array.from(new Set(data.map(d => d[col]).filter(v => v !== null && v !== '')));
+        options[col] = unique.sort((a, b) => {
+          if (typeof a === 'number' && typeof b === 'number') return a - b;
+          return String(a).localeCompare(String(b));
+        });
+      });
+      setFilterOptions(options);
+    }
+  };
+
+  useEffect(() => {
+    fetchFilterOptions(activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedFilters(columnFilters);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [columnFilters]);
+
   const fetchTableData = async () => {
     setIsLoading(true);
     try {
@@ -35,9 +73,22 @@ const DatabaseEditor: React.FC = () => {
         }
       }
 
-      const { data: resultData, error, count } = await query
-        .range(page * rowsPerPage, (page + 1) * rowsPerPage - 1)
-        .order('id', { ascending: true });
+      // Apply column filters
+      Object.entries(debouncedFilters).forEach(([col, val]) => {
+        if (val !== '') {
+          query = query.eq(col, val);
+        }
+      });
+
+      query = query.range(page * rowsPerPage, (page + 1) * rowsPerPage - 1);
+
+      if (sortConfig) {
+        query = query.order(sortConfig.column, { ascending: sortConfig.ascending });
+      } else {
+        query = query.order('id', { ascending: true });
+      }
+
+      const { data: resultData, error, count } = await query;
 
       if (error) throw error;
       
@@ -54,7 +105,7 @@ const DatabaseEditor: React.FC = () => {
 
   useEffect(() => {
     fetchTableData();
-  }, [activeTab, page]);
+  }, [activeTab, page, sortConfig, debouncedFilters]);
 
   // Triggers when search is submitted
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -99,9 +150,20 @@ const DatabaseEditor: React.FC = () => {
     }
   };
 
+  const handleDeleteRow = async (id: number) => {
+    if (!window.confirm('Yakin ingin menghapus baris data ini secara permanen?')) return;
+    try {
+      const { error } = await supabase.from(activeTab).delete().eq('id', id);
+      if (error) throw error;
+      fetchTableData();
+    } catch (err: any) {
+      alert('Gagal menghapus data: ' + err.message);
+    }
+  };
+
   // Define columns dynamically to render excel-like cells
-  const lampuCols = ['id', 'kode', 'panel', 'kategori', 'jenis_lampu', 'tiang', 'thpasang', 'desakel', 'kecamatan', 'kabupaten', 'latitude', 'longitude'];
-  const panelCols = ['id', 'id_pelanggan', 'nama_pelanggan', 'kategori', 'no_meter', 'daya', 'jml_lampu', 'total_daya', 'alamat', 'thpasang', 'desakel', 'kecamatan', 'kabupaten', 'latitude', 'longitude'];
+  const lampuCols = ['kode', 'panel', 'kategori', 'jenis_lampu', 'tiang', 'thpasang', 'desakel', 'latitude', 'longitude'];
+  const panelCols = ['id_pelanggan', 'nama_pelanggan', 'kategori', 'no_meter', 'daya', 'jml_lampu', 'total_daya', 'alamat', 'thpasang', 'desakel', 'latitude', 'longitude'];
 
   const columns = activeTab === 'lampu' ? lampuCols : panelCols;
 
@@ -167,25 +229,59 @@ const DatabaseEditor: React.FC = () => {
       </header>
 
       {/* Editor Grid Container */}
-      <main className="flex-1 overflow-auto bg-white p-4">
+      <main className="flex-1 overflow-hidden bg-white p-4 flex flex-col">
         {isLoading && data.length === 0 ? (
           <div className="flex justify-center items-center h-full text-slate-400 gap-2">
             <RefreshCw className="animate-spin" size={20} />
             <span>Memuat tabel...</span>
           </div>
         ) : (
-          <div className="border border-slate-300 shadow-sm rounded bg-white w-max min-w-full">
-            <table className="w-full text-sm text-left border-collapse">
+          <div className="border border-slate-300 shadow-sm rounded bg-slate-50 overflow-auto flex-1 outline-none">
+            <table className="w-max text-sm text-left border-collapse bg-white">
               <thead className="bg-slate-100 border-b border-slate-300 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th className="w-10 border-r border-slate-300 p-0">
                     <div className="h-8 flex items-center justify-center text-slate-400">#</div>
                   </th>
-                  {columns.map(col => (
-                    <th key={col} className={`border-r border-slate-300 font-semibold text-slate-600 px-3 py-2 whitespace-nowrap capitalize ${col === 'id' ? 'w-20' : 'min-w-[150px]'}`}>
-                      {col.replace(/_/g, ' ')}
+                  {columns.map(col => {
+                    const isExcluded = col === 'kode' || col === 'panel';
+                    return (
+                    <th key={col} className="border-r border-slate-300 font-semibold text-slate-600 p-0 align-middle">
+                      <div className="px-3 py-2 resize-x overflow-hidden min-w-[20px] w-[180px] h-full flex flex-col gap-2">
+                        <div 
+                          className={`flex items-center justify-between select-none ${isExcluded ? '' : 'cursor-pointer hover:text-blue-600'} group`}
+                          onClick={() => {
+                            if (isExcluded) return;
+                            setSortConfig(prev => prev?.column === col ? { column: col, ascending: !prev.ascending } : { column: col, ascending: true });
+                            setPage(0);
+                          }}
+                        >
+                          <span className="capitalize whitespace-nowrap">{col.replace(/_/g, ' ')}</span>
+                          {!isExcluded && (
+                            <span className="text-slate-400">
+                              {sortConfig?.column === col ? (sortConfig.ascending ? <ChevronUp size={14}/> : <ChevronDown size={14}/>) : <ArrowUpDown size={12} className="opacity-0 group-hover:opacity-50"/>}
+                            </span>
+                          )}
+                        </div>
+                        {!isExcluded && (
+                          <select
+                            value={columnFilters[col] || ''}
+                            onChange={(e) => setColumnFilters({...columnFilters, [col]: e.target.value})}
+                            className="w-full text-xs font-normal border border-slate-200 rounded px-1 py-1 outline-none focus:border-blue-400 bg-white"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="">Semua (Filter...)</option>
+                            {(filterOptions[col] || []).map(opt => (
+                              <option key={String(opt)} value={String(opt)}>{opt}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
                     </th>
-                  ))}
+                  )})}
+                  <th className="w-14 border-l border-slate-300 p-0 text-center sticky right-0 bg-slate-200 z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                    <div className="px-3 py-2 font-semibold text-slate-700">Aksi</div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -212,31 +308,33 @@ const DatabaseEditor: React.FC = () => {
                           const isCellEdited = editedValue !== undefined;
                           const displayValue = isCellEdited ? editedValue : value;
 
-                          // ID fields are strictly read-only
-                          if (col === 'id') {
-                            return (
-                              <td key={col} className="border-r border-slate-300 px-3 py-2 text-slate-400 bg-slate-50 font-mono text-xs">
-                                {displayValue}
-                              </td>
-                            );
-                          }
-
                           return (
                             <td key={col} className={`border-r border-slate-300 p-0 bg-white relative`}>
-                              <input
-                                type={col === 'latitude' || col === 'longitude' ? 'number' : 'text'}
-                                step={col === 'latitude' || col === 'longitude' ? 'any' : undefined}
-                                value={displayValue || ''}
-                                onChange={(e) => handleCellChange(rowId, col, e.target.value)}
-                                className={`w-full h-full min-h-[36px] px-3 py-1 bg-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${isCellEdited ? 'text-blue-700 font-medium bg-blue-50/30' : 'text-slate-700'}`}
-                                placeholder="-"
-                              />
+                              <div className="relative w-full h-full min-h-[36px] overflow-hidden">
+                                <input
+                                  type={col === 'latitude' || col === 'longitude' ? 'number' : 'text'}
+                                  step={col === 'latitude' || col === 'longitude' ? 'any' : undefined}
+                                  value={displayValue || ''}
+                                  onChange={(e) => handleCellChange(rowId, col, e.target.value)}
+                                  className={`absolute inset-0 w-full h-full min-w-0 px-3 py-1 bg-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 max-w-none ${isCellEdited ? 'text-blue-700 font-medium bg-blue-50/30' : 'text-slate-700'}`}
+                                  placeholder="-"
+                                />
+                              </div>
                               {isCellEdited && (
-                                <div className="absolute top-0 right-0 w-2 h-2 bg-blue-500" style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }} />
+                                <div className="absolute top-0 right-0 w-2 h-2 bg-blue-500 z-10" style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }} />
                               )}
                             </td>
                           );
                         })}
+                        <td className="border-l border-slate-300 p-0 bg-slate-100 text-center align-middle sticky right-0 z-0 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)] border-b">
+                          <button 
+                            onClick={() => handleDeleteRow(row.id)} 
+                            className="bg-white text-red-500 hover:bg-red-50 hover:text-red-700 border border-slate-200 p-1.5 rounded transition-colors inline-flex justify-center items-center shadow-sm my-1 mx-2"
+                            title="Hapus baris"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
                       </tr>
                     )
                   })

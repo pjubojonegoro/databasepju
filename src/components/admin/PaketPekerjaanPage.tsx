@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
-import { RefreshCw, Save, Plus, ClipboardPaste, ArrowRight } from 'lucide-react';
+import { RefreshCw, Save, Plus, ClipboardPaste, ArrowRight, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 
 const PaketPekerjaanPage: React.FC = () => {
   const { tahun } = useParams();
@@ -11,11 +11,46 @@ const PaketPekerjaanPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [edits, setEdits] = useState<Record<string, Record<string, any>>>({});
 
-  const columns = ['nama_paket', 'jml_lampu', 'idpel', 'status', 'keterangan', 'aksi'];
+  // Sorting and Filtering
+  const [sortConfig, setSortConfig] = useState<{ column: string, ascending: boolean } | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({});
+  const [filterOptions, setFilterOptions] = useState<Record<string, any[]>>({});
+
+  const fetchFilterOptions = async () => {
+    const { data } = await supabase.from('paket_pekerjaan').select();
+    if (data) {
+      const options: Record<string, any[]> = {};
+      const cols = ['nama_paket', 'thpasang', 'jml_lampu', 'idpel', 'status', 'keterangan'];
+      cols.forEach(col => {
+        if (col === 'nama_paket') return;
+        const unique = Array.from(new Set(data.map(d => d[col]).filter(v => v !== null && v !== '')));
+        options[col] = unique.sort((a, b) => {
+          if (typeof a === 'number' && typeof b === 'number') return a - b;
+          return String(a).localeCompare(String(b));
+        });
+      });
+      setFilterOptions(options);
+    }
+  };
+
+  useEffect(() => {
+    fetchFilterOptions();
+  }, []);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedFilters(columnFilters);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [columnFilters]);
+
+  const columns = ['nama_paket', 'thpasang', 'jml_lampu', 'idpel', 'status', 'keterangan', 'aksi'];
 
   const getColumnWidthClass = (col: string) => {
     switch (col) {
       case 'nama_paket': return 'min-w-[250px] w-[35%]';
+      case 'thpasang': return 'min-w-[80px] w-[80px] whitespace-nowrap text-center';
       case 'jml_lampu': return 'min-w-[60px] w-[60px] whitespace-nowrap';
       case 'idpel': return 'min-w-[80px] w-[80px] whitespace-nowrap';
       case 'status': return 'min-w-[100px] w-[100px] whitespace-nowrap';
@@ -28,12 +63,28 @@ const PaketPekerjaanPage: React.FC = () => {
   const fetchTableData = async () => {
     setIsLoading(true);
     try {
-      // Fetching without 'tahun' filter since it's not in the schema yet.
-      // If schema is updated later to include 'tahun', we can add: .eq('tahun', tahun)
-      const { data: resultData, error } = await supabase
+      let query = supabase
         .from('paket_pekerjaan')
-        .select('*')
-        .order('id', { ascending: true });
+        .select('*');
+
+      if (tahun) {
+        query = query.eq('thpasang', Number(tahun));
+      }
+
+      // Apply column filters
+      Object.entries(debouncedFilters).forEach(([col, val]) => {
+        if (val !== '') {
+           query = query.eq(col, val);
+        }
+      });
+
+      if (sortConfig) {
+        query = query.order(sortConfig.column, { ascending: sortConfig.ascending });
+      } else {
+        query = query.order('id', { ascending: true });
+      }
+
+      const { data: resultData, error } = await query;
 
       if (error) throw error;
       setData(resultData || []);
@@ -48,7 +99,7 @@ const PaketPekerjaanPage: React.FC = () => {
 
   useEffect(() => {
     fetchTableData();
-  }, [tahun]);
+  }, [tahun, sortConfig, debouncedFilters]);
 
   const handleCellChange = (id: string, column: string, value: string) => {
     setEdits(prev => {
@@ -56,7 +107,7 @@ const PaketPekerjaanPage: React.FC = () => {
 
       // Convert to proper types based on schema
       let finalValue: any = value === '' ? null : value;
-      if (column === 'jml_lampu' || column === 'idpel') {
+      if (column === 'jml_lampu' || column === 'idpel' || column === 'thpasang') {
         finalValue = value === '' ? null : Number(value);
       }
 
@@ -99,7 +150,7 @@ const PaketPekerjaanPage: React.FC = () => {
 
   const addNewRow = () => {
     const newId = `new_${Date.now()}`;
-    const newEntry = { id: newId, nama_paket: '', jml_lampu: null, idpel: null, status: '', keterangan: '' };
+    const newEntry = { id: newId, nama_paket: '', thpasang: tahun ? Number(tahun) : null, jml_lampu: null, idpel: null, status: '', keterangan: '' };
     setData([...data, newEntry]);
   };
 
@@ -123,16 +174,18 @@ const PaketPekerjaanPage: React.FC = () => {
         const entry = {
           id: newId,
           nama_paket: cells[0]?.trim() || '',
-          jml_lampu: cells[1] ? Number(cells[1].trim()) : null,
-          idpel: cells[2] ? Number(cells[2].trim()) : null,
-          status: cells[3]?.trim() || '',
-          keterangan: cells[4]?.trim() || ''
+          thpasang: cells[1] ? Number(cells[1].trim()) : (tahun ? Number(tahun) : null), // support column index shift
+          jml_lampu: cells[2] ? Number(cells[2].trim()) : null,
+          idpel: cells[3] ? Number(cells[3].trim()) : null,
+          status: cells[4]?.trim() || '',
+          keterangan: cells[5]?.trim() || ''
         };
 
         newEntries.push(entry);
 
         newEdits[newId] = {
           nama_paket: entry.nama_paket,
+          thpasang: entry.thpasang,
           jml_lampu: entry.jml_lampu,
           idpel: entry.idpel,
           status: entry.status,
@@ -213,11 +266,41 @@ const PaketPekerjaanPage: React.FC = () => {
               <thead className="bg-slate-100 border-b border-slate-300 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th className="w-10 border-r border-slate-300 p-0 text-center text-slate-400">#</th>
-                  {columns.map(col => (
-                    <th key={col} className={`border-r border-slate-300 font-semibold text-slate-600 px-3 py-2 capitalize ${getColumnWidthClass(col)}`}>
-                      {col.replace(/_/g, ' ')}
+                  {columns.map(col => {
+                    const isExcluded = col === 'nama_paket' || col === 'aksi';
+                    return (
+                    <th key={col} className={`border-r border-slate-300 font-semibold text-slate-600 px-3 py-2 capitalize ${getColumnWidthClass(col)} align-top`}>
+                      <div className="flex flex-col gap-2">
+                        <div 
+                          className={`flex items-center justify-between select-none ${isExcluded ? '' : 'cursor-pointer hover:text-indigo-600'} group`}
+                          onClick={() => {
+                            if (isExcluded) return;
+                            setSortConfig(prev => prev?.column === col ? { column: col, ascending: !prev.ascending } : { column: col, ascending: true });
+                          }}
+                        >
+                          <span>{col.replace(/_/g, ' ')}</span>
+                          {!isExcluded && (
+                            <span className="text-slate-400">
+                              {sortConfig?.column === col ? (sortConfig.ascending ? <ChevronUp size={14}/> : <ChevronDown size={14}/>) : <ArrowUpDown size={12} className="opacity-0 group-hover:opacity-50"/>}
+                            </span>
+                          )}
+                        </div>
+                        {!isExcluded && (
+                          <select
+                            value={columnFilters[col] || ''}
+                            onChange={(e) => setColumnFilters({...columnFilters, [col]: e.target.value})}
+                            className="w-full text-xs font-normal border border-slate-200 rounded px-1 py-1 outline-none focus:border-indigo-400 bg-white"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="">Semua</option>
+                            {(filterOptions[col] || []).map(opt => (
+                              <option key={String(opt)} value={String(opt)}>{opt}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
                     </th>
-                  ))}
+                  )})}
                 </tr>
               </thead>
               <tbody>
@@ -272,7 +355,7 @@ const PaketPekerjaanPage: React.FC = () => {
                                 />
                               ) : (
                                 <input
-                                  type={col === 'jml_lampu' || col === 'idpel' ? 'number' : 'text'}
+                                  type={col === 'jml_lampu' || col === 'idpel' || col === 'thpasang' ? 'number' : 'text'}
                                   value={displayValue || ''}
                                   onChange={(e) => handleCellChange(rowId, col, e.target.value)}
                                   className={`w-full h-full min-h-[40px] px-3 py-2 bg-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 ${isCellEdited ? 'text-indigo-700 font-medium bg-indigo-50/30' : 'text-slate-700'}`}

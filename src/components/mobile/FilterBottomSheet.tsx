@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BottomSheet } from 'react-spring-bottom-sheet';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Box, SlidersHorizontal, Activity, X } from 'lucide-react';
+import { Layers, Box, SlidersHorizontal, Activity, X, CalendarDays } from 'lucide-react';
 import 'react-spring-bottom-sheet/dist/style.css';
 
 interface FilterBottomSheetProps {
@@ -15,8 +15,19 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
     showBatasDesa, setShowBatasDesa,
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
-    displayedCount
+    tahunPasang, setTahunPasang,
+    displayedCount, globalSearchData
   } = useAppStore();
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    globalSearchData.points.forEach(f => {
+      if (f.properties?.thpasang) {
+        years.add(String(f.properties.thpasang));
+      }
+    });
+    return Array.from(years).sort().reverse();
+  }, [globalSearchData.points]);
 
   const basemaps = [
     { id: 'default', label: 'Default', url: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6' },
@@ -141,6 +152,29 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
                 {kat}
               </button>
             ))}
+          </div>
+        </section>
+
+        {/* Tahun Pasang Filter */}
+        <section>
+          <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+            <CalendarDays size={16} />
+            Tahun Pasang
+          </h3>
+          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/50 overflow-hidden relative">
+            <select
+              value={tahunPasang}
+              onChange={(e) => setTahunPasang(e.target.value)}
+              className="w-full bg-transparent text-slate-700 dark:text-slate-300 text-sm font-semibold p-4 outline-none appearance-none cursor-pointer z-10 relative"
+            >
+              <option value="Semua" className="bg-white dark:bg-slate-800">Semua Tahun</option>
+              {availableYears.map(year => (
+                <option key={year} value={year} className="bg-white dark:bg-slate-800">{year}</option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
           </div>
         </section>
 

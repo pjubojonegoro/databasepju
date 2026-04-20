@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, Calendar } from 'lucide-react';
+import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, CalendarDays, Move } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Sidebar: React.FC = () => {
@@ -9,21 +9,22 @@ const Sidebar: React.FC = () => {
     showBatasDesa, setShowBatasDesa,
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
-    thpasangFilter, setThpasangFilter,
-    globalSearchData,
-    displayedCount
+    tahunPasang, setTahunPasang,
+    displayedCount, globalSearchData,
+    isEditMode, setEditMode
   } = useAppStore();
 
-  const navigate = useNavigate();
-
-  const availableYears = React.useMemo(() => {
+  const availableYears = useMemo(() => {
     const years = new Set<string>();
-    globalSearchData.points.forEach((p: any) => {
-      const val = p.properties?.thpasang;
-      if (val) years.add(val.toString());
+    globalSearchData.points.forEach(f => {
+      if (f.properties?.thpasang) {
+        years.add(String(f.properties.thpasang));
+      }
     });
-    return Array.from(years).sort((a,b) => Number(b) - Number(a));
+    return Array.from(years).sort().reverse();
   }, [globalSearchData.points]);
+
+  const navigate = useNavigate();
 
   const basemaps = [
     { id: 'default', label: 'Default', url: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6' },
@@ -44,7 +45,7 @@ const Sidebar: React.FC = () => {
 
       {/* Scrollable Content */}
       <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-6">
-        
+
         {/* Basemap Selection */}
         <section>
           <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
@@ -53,19 +54,19 @@ const Sidebar: React.FC = () => {
           </h2>
           <div className="grid grid-cols-2 gap-2">
             {basemaps.map(b => (
-              <label 
-                key={b.id} 
+              <label
+                key={b.id}
                 className={`flex items-center justify-center p-2 rounded-lg cursor-pointer border text-xs font-semibold select-none transition-colors
-                  ${basemapStyle === b.url 
-                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' 
+                  ${basemapStyle === b.url
+                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/50'
                     : 'bg-slate-800/50 text-slate-400 border-slate-700 hover:bg-slate-800'}`}
               >
-                <input 
-                  type="radio" 
-                  name="basemap" 
+                <input
+                  type="radio"
+                  name="basemap"
                   className="hidden"
-                  checked={basemapStyle === b.url} 
-                  onChange={() => setBasemapStyle(b.url)} 
+                  checked={basemapStyle === b.url}
+                  onChange={() => setBasemapStyle(b.url)}
                 />
                 {b.label}
               </label>
@@ -78,9 +79,9 @@ const Sidebar: React.FC = () => {
           <div className="flex items-center justify-between p-3 bg-slate-800/40 rounded-xl border border-slate-700/50">
             <span className="text-sm font-semibold text-slate-300">Batas Desa</span>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
+              <input
+                type="checkbox"
+                className="sr-only peer"
                 checked={showBatasDesa}
                 onChange={(e) => setShowBatasDesa(e.target.checked)}
               />
@@ -98,12 +99,12 @@ const Sidebar: React.FC = () => {
           <div className="flex flex-col gap-2">
             {(['Keduanya', 'Lampu', 'Panel'] as const).map(dataset => (
               <label key={dataset} className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="radio" 
-                  name="dataset" 
+                <input
+                  type="radio"
+                  name="dataset"
                   className="hidden"
-                  checked={activeDataset === dataset} 
-                  onChange={() => setActiveDataset(dataset)} 
+                  checked={activeDataset === dataset}
+                  onChange={() => setActiveDataset(dataset)}
                 />
                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center
                   ${activeDataset === dataset ? 'border-blue-500' : 'border-slate-600 group-hover:border-slate-400'}`}>
@@ -124,12 +125,12 @@ const Sidebar: React.FC = () => {
           <div className="flex flex-col gap-2">
             {(['Semua', 'PJU', 'PJL'] as const).map(kat => (
               <label key={kat} className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="radio" 
-                  name="kategori" 
+                <input
+                  type="radio"
+                  name="kategori"
                   className="hidden"
-                  checked={asetKategori === kat} 
-                  onChange={() => setAsetKategori(kat)} 
+                  checked={asetKategori === kat}
+                  onChange={() => setAsetKategori(kat)}
                 />
                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center
                   ${asetKategori === kat ? 'border-amber-500' : 'border-slate-600 group-hover:border-slate-400'}`}>
@@ -144,25 +145,46 @@ const Sidebar: React.FC = () => {
         {/* Tahun Pasang Filter */}
         <section>
           <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
-            <Calendar size={16} />
+            <CalendarDays size={16} />
             Tahun Pasang
           </h2>
-          <select 
-            value={thpasangFilter}
-            onChange={(e) => setThpasangFilter(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 hover:bg-slate-700/50 transition-colors"
-          >
-            <option value="Semua">Semua Tahun</option>
-            {availableYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+          <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 overflow-hidden relative">
+            <select
+              value={tahunPasang}
+              onChange={(e) => setTahunPasang(e.target.value)}
+              className="w-full bg-transparent text-slate-300 text-sm font-medium p-3 outline-none appearance-none cursor-pointer z-10 relative"
+            >
+              <option value="Semua" className="bg-slate-800">Semua Tahun</option>
+              {availableYears.map(year => (
+                <option key={year} value={year} className="bg-slate-800">{year}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
         </section>
 
       </div>
 
       {/* Editor Button */}
-      <div className="px-4 py-2 bg-slate-900 border-t border-slate-800">
+      <div className="px-4 py-3 bg-slate-900 border-t border-slate-800 flex flex-col gap-2">
+        <button
+          onClick={() => setEditMode(!isEditMode)}
+          className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all font-semibold text-sm shadow-sm border ${
+            isEditMode 
+            ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 hover:bg-amber-500/30' 
+            : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Move size={16} />
+            Mode Ubah Posisi
+          </div>
+          <div className={`w-8 h-4 rounded-full relative transition-colors ${isEditMode ? 'bg-amber-500' : 'bg-slate-600'}`}>
+             <div className={`absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all`} style={{ left: isEditMode ? '18px' : '2px' }} />
+          </div>
+        </button>
         <button
           onClick={() => navigate('/admin/database')}
           className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 hover:border-indigo-500 rounded-xl transition-all font-semibold text-sm shadow-sm"

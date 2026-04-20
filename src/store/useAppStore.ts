@@ -10,6 +10,8 @@ interface AppState {
   setMobileSheetOpen: (isOpen: boolean) => void;
 
   // New States for Map Filters
+  isEditMode: boolean;
+  setEditMode: (mode: boolean) => void;
   basemapStyle: string;
   setBasemapStyle: (styleUrl: string) => void;
   showBatasDesa: boolean;
@@ -18,8 +20,8 @@ interface AppState {
   setActiveDataset: (dataset: 'Lampu' | 'Panel' | 'Keduanya') => void;
   asetKategori: 'Semua' | 'PJU' | 'PJL';
   setAsetKategori: (kategori: 'Semua' | 'PJU' | 'PJL') => void;
-  thpasangFilter: string;
-  setThpasangFilter: (year: string) => void;
+  tahunPasang: string;
+  setTahunPasang: (th: string) => void;
   displayedCount: number;
   setDisplayedCount: (count: number) => void;
 
@@ -37,6 +39,9 @@ export const useAppStore = create<AppState>((set) => ({
   isMobileSheetOpen: false,
   setMobileSheetOpen: (isOpen) => set({ isMobileSheetOpen: isOpen }),
 
+  isEditMode: false,
+  setEditMode: (mode) => set({ isEditMode: mode, selectedPoint: null }),
+
   basemapStyle: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6',
   setBasemapStyle: (styleUrl) => set({ basemapStyle: styleUrl }),
 
@@ -49,8 +54,8 @@ export const useAppStore = create<AppState>((set) => ({
   asetKategori: 'Semua',
   setAsetKategori: (kategori) => set({ asetKategori: kategori }),
 
-  thpasangFilter: 'Semua',
-  setThpasangFilter: (year) => set({ thpasangFilter: year }),
+  tahunPasang: 'Semua',
+  setTahunPasang: (th) => set({ tahunPasang: th }),
 
   displayedCount: 0,
   setDisplayedCount: (count) => set({ displayedCount: count }),
