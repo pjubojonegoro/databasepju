@@ -11,6 +11,7 @@ export interface PjuPoint {
   kabupaten: string | null;
   latitude: number;
   longitude: number;
+  _sourceTable?: 'lampu' | 'panel';
 }
 
 export interface PanelPoint {
@@ -30,6 +31,7 @@ export interface PanelPoint {
   latitude: number;
   longitude: number;
   location?: any; // PostGIS geography
+  _sourceTable?: 'lampu' | 'panel';
 }
 
 export interface GeoJSONFeature {
