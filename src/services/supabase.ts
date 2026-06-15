@@ -16,7 +16,7 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
 export async function fetchLampuDataGeoJSON(): Promise<GeoJSONFeatureCollection> {
   const { data, error } = await supabase
     .from('lampu')
-    .select('*')
+    .select('id, latitude, longitude, kode, kategori, thpasang, desakel, kecamatan')
     .limit(50000);
 
   if (error) {
@@ -42,7 +42,7 @@ export async function fetchLampuDataGeoJSON(): Promise<GeoJSONFeatureCollection>
 export async function fetchPanelDataGeoJSON(): Promise<GeoJSONFeatureCollection> {
   const { data, error } = await supabase
     .from('panel')
-    .select('*')
+    .select('id, latitude, longitude, nama_pelanggan, kategori, thpasang, desakel, kecamatan')
     .limit(50000);
 
   if (error) {

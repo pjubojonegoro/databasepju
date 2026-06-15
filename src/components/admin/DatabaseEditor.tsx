@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
-import { Save, Search, RefreshCw, Trash2, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { Save, Search, RefreshCw, Trash2 } from 'lucide-react';
 
 type TableMode = 'lampu' | 'panel';
 
@@ -238,48 +238,23 @@ const DatabaseEditor: React.FC = () => {
         ) : (
           <div className="border border-slate-300 shadow-sm rounded bg-slate-50 overflow-auto flex-1 outline-none">
             <table className="w-max text-sm text-left border-collapse bg-white">
-              <thead className="bg-slate-100 border-b border-slate-300 sticky top-0 z-10 shadow-sm">
+              <thead className="bg-slate-100 border-b border-slate-300 sticky top-0 z-30 shadow-sm">
                 <tr>
-                  <th className="w-10 border-r border-slate-300 p-0">
+                  <th className="w-[40px] min-w-[40px] max-w-[40px] border-r border-slate-300 p-0 sticky left-0 z-40 bg-slate-100">
                     <div className="h-8 flex items-center justify-center text-slate-400">#</div>
                   </th>
                   {columns.map(col => {
-                    const isExcluded = col === 'kode' || col === 'panel';
+                    const isStickyCol = col === 'kode' || col === 'id_pelanggan';
                     return (
-                    <th key={col} className="border-r border-slate-300 font-semibold text-slate-600 p-0 align-middle">
-                      <div className="px-3 py-2 resize-x overflow-hidden min-w-[20px] w-[180px] h-full flex flex-col gap-2">
-                        <div 
-                          className={`flex items-center justify-between select-none ${isExcluded ? '' : 'cursor-pointer hover:text-blue-600'} group`}
-                          onClick={() => {
-                            if (isExcluded) return;
-                            setSortConfig(prev => prev?.column === col ? { column: col, ascending: !prev.ascending } : { column: col, ascending: true });
-                            setPage(0);
-                          }}
-                        >
+                    <th key={col} className={`border-r border-slate-300 font-semibold text-slate-600 p-0 align-middle ${isStickyCol ? 'sticky left-[40px] z-40 bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : ''}`}>
+                      <div className="px-3 py-2 resize-x overflow-hidden min-w-[20px] w-[180px] h-full flex flex-col justify-center">
+                        <div className="flex items-center select-none">
                           <span className="capitalize whitespace-nowrap">{col.replace(/_/g, ' ')}</span>
-                          {!isExcluded && (
-                            <span className="text-slate-400">
-                              {sortConfig?.column === col ? (sortConfig.ascending ? <ChevronUp size={14}/> : <ChevronDown size={14}/>) : <ArrowUpDown size={12} className="opacity-0 group-hover:opacity-50"/>}
-                            </span>
-                          )}
                         </div>
-                        {!isExcluded && (
-                          <select
-                            value={columnFilters[col] || ''}
-                            onChange={(e) => setColumnFilters({...columnFilters, [col]: e.target.value})}
-                            className="w-full text-xs font-normal border border-slate-200 rounded px-1 py-1 outline-none focus:border-blue-400 bg-white"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <option value="">Semua (Filter...)</option>
-                            {(filterOptions[col] || []).map(opt => (
-                              <option key={String(opt)} value={String(opt)}>{opt}</option>
-                            ))}
-                          </select>
-                        )}
                       </div>
                     </th>
                   )})}
-                  <th className="w-14 border-l border-slate-300 p-0 text-center sticky right-0 bg-slate-200 z-10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                  <th className="w-14 border-l border-slate-300 p-0 text-center sticky right-0 z-40 bg-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                     <div className="px-3 py-2 font-semibold text-slate-700">Aksi</div>
                   </th>
                 </tr>
@@ -298,7 +273,7 @@ const DatabaseEditor: React.FC = () => {
                     
                     return (
                       <tr key={row.id} className="border-b border-slate-200 hover:bg-slate-50 relative group">
-                        <td className="border-r border-slate-300 bg-slate-50 text-center text-xs text-slate-400 p-0 font-medium select-none sticky left-0 z-0">
+                        <td className="w-[40px] min-w-[40px] max-w-[40px] border-r border-slate-300 bg-slate-50 text-center text-xs text-slate-400 p-0 font-medium select-none sticky left-0 z-20">
                           {isRowEdited && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />}
                           {page * rowsPerPage + index + 1}
                         </td>
@@ -307,9 +282,10 @@ const DatabaseEditor: React.FC = () => {
                           const editedValue = edits[rowId]?.[col];
                           const isCellEdited = editedValue !== undefined;
                           const displayValue = isCellEdited ? editedValue : value;
+                          const isStickyCol = col === 'kode' || col === 'id_pelanggan';
 
                           return (
-                            <td key={col} className={`border-r border-slate-300 p-0 bg-white relative`}>
+                            <td key={col} className={`border-r border-slate-300 p-0 relative ${isStickyCol ? 'sticky left-[40px] z-20 bg-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]' : 'bg-white'}`}>
                               <div className="relative w-full h-full min-h-[36px] overflow-hidden">
                                 <input
                                   type={col === 'latitude' || col === 'longitude' ? 'number' : 'text'}

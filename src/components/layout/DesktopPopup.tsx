@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { MapPin, Info, Settings, Calendar, Activity, X, Clipboard, Navigation2, Eye } from 'lucide-react';
+import PjuImage from '../ui/PjuImage';
 
 const DesktopPopup: React.FC = () => {
   const { selectedPoint, setSelectedPoint } = useAppStore();
@@ -48,6 +49,16 @@ const DesktopPopup: React.FC = () => {
 
       {/* Body */}
       <div className="p-4 space-y-3">
+        {/* Foto */}
+        {selectedPoint.foto && (
+          <div className="w-full h-32 rounded-xl overflow-hidden border border-slate-700/50 relative">
+            <PjuImage 
+              fotoId={selectedPoint.foto} 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
         {/* Status */}
         <div className={`flex items-center gap-2.5 p-3 rounded-xl border text-sm font-semibold ${statusColor}`}>
           <Activity size={16} />

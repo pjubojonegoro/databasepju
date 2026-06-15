@@ -2,6 +2,7 @@ import React from 'react';
 import { BottomSheet } from 'react-spring-bottom-sheet';
 import { useAppStore } from '../../store/useAppStore';
 import { MapPin, Info, Settings, Calendar, Activity, X, Navigation2, Eye } from 'lucide-react';
+import PjuImage from '../ui/PjuImage';
 import 'react-spring-bottom-sheet/dist/style.css';
 
 const PjuBottomSheet: React.FC = () => {
@@ -44,6 +45,16 @@ const PjuBottomSheet: React.FC = () => {
       <div className="px-5 pb-8 pt-2">
         <div className="space-y-4">
           
+          {/* Foto */}
+          {selectedPoint.foto && (
+            <div className="w-full h-48 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 relative shadow-sm">
+              <PjuImage 
+                fotoId={selectedPoint.foto} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
           {/* Status Banner */}
           <div className={`p-4 rounded-xl flex items-center gap-3 border ${
             selectedPoint.kategori === 'Aktif' 

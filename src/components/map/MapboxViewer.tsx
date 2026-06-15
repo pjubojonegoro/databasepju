@@ -241,25 +241,8 @@ const MapboxViewer: React.FC = () => {
           });
         }
 
-        // 2. RUAS JALAN (Tengah)
-        if (data.ruasJalanData) {
-          if (!m.getSource('ruas-jalan')) {
-            m.addSource('ruas-jalan', { type: 'geojson', data: data.ruasJalanData });
-          }
-          if (!m.getLayer('ruas-jalan-layer')) {
-            m.addLayer({
-              id: 'ruas-jalan-layer',
-              type: 'line',
-              source: 'ruas-jalan',
-              layout: { visibility: 'visible' },
-              paint: {
-                'line-color': '#000000',
-                'line-width': 3,
-                'line-opacity': 0.5
-              }
-            });
-          }
-        }
+        // 2. RUAS JALAN (Tengah) - Will be loaded via Vector Tiles (Tahap 2)
+        // Placeholder for ruas jalan vector tiles
 
         // 3. TITIK LAMPU/PANEL (Paling Atas)
         if (!m.getSource('all-points')) {
@@ -294,10 +277,28 @@ const MapboxViewer: React.FC = () => {
 
           m.on('mouseenter', 'points-layer', () => { m.getCanvas().style.cursor = 'pointer'; });
           m.on('mouseleave', 'points-layer', () => { m.getCanvas().style.cursor = ''; });
-          m.on('click', 'points-layer', (e) => {
+          m.on('click', 'points-layer', async (e) => {
             if (!e.features || e.features.length === 0) return;
             e.originalEvent.stopPropagation();
-            setSelectedPoint(e.features[0].properties as any);
+            
+            const props = e.features[0].properties as any;
+            try {
+              const table = props._sourceTable === 'lampu' ? 'lampu' : 'panel';
+              const { data, error } = await supabase
+                .from(table)
+                .select('*')
+                .eq('id', props.id)
+                .single();
+                
+              if (!error && data) {
+                setSelectedPoint({ ...data, _sourceTable: props._sourceTable });
+              } else {
+                setSelectedPoint(props);
+              }
+            } catch (err) {
+              console.error('Error fetching point details:', err);
+              setSelectedPoint(props);
+            }
           });
 
           // Klik di area kosong peta → tutup popup
@@ -370,25 +371,48 @@ const MapboxViewer: React.FC = () => {
 
         // Batas desa kini dari vector tiles — tidak perlu fetch file JS
 
-        let ruasJalanData = null;
+        let ruasSearch: { name: string; lng: number; lat: number }[] = [];
         try {
-          // Import conditionally to avoid initial load block if top-level
-          const { kml } = await import('@tmcw/togeojson');
-          const res = await fetch('/ruasjalan.kml');
+          const res = await fetch('/ruasjalan_index.json');
           if (res.ok) {
-            const text = await res.text();
-            const dom = new DOMParser().parseFromString(text, 'text/xml');
-            ruasJalanData = kml(dom);
+            ruasSearch = await res.json();
           }
         } catch (e) {
-          console.error("Failed to load ruasjalan.kml", e);
+          console.error("Failed to load ruasjalan_index.json", e);
         }
 
-        mapDataRef.current = { combinedFeatures, ruasJalanData };
+        mapDataRef.current = { combinedFeatures, ruasJalanData: null };
+        // Optimize: Extract only what's necessary for GlobalSearch to avoid huge JSONs in Zustand
+        const desaSet = new Map<string, any>();
+        combinedFeatures.forEach((p: any) => {
+          const desakel = p.properties?.desakel;
+          const kecamatan = p.properties?.kecamatan;
+          if (desakel && typeof desakel === 'string') {
+            const name = desakel.toLowerCase();
+            const key = `${name}-${kecamatan?.toLowerCase() || ''}`;
+            if (!desaSet.has(key) && p.geometry?.coordinates) {
+              desaSet.set(key, {
+                name: desakel,
+                kecamatan: kecamatan || '',
+                lng: p.geometry.coordinates[0],
+                lat: p.geometry.coordinates[1]
+              });
+            }
+          }
+        });
+
+
+        const yearsSet = new Set<string>();
+        combinedFeatures.forEach((p: any) => {
+          if (p.properties?.thpasang) {
+            yearsSet.add(String(p.properties.thpasang));
+          }
+        });
+        useAppStore.getState().setAvailableYears(Array.from(yearsSet).sort().reverse());
+
         useAppStore.getState().setGlobalSearchData({
-          points: combinedFeatures,
-          batasDesa: [], // served via vector tiles — no local features needed
-          ruasJalan: ruasJalanData?.features || []
+          desaList: Array.from(desaSet.values()),
+          ruasJalan: ruasSearch
         });
         addSourcesAndLayers();
         setIsLoading(false);

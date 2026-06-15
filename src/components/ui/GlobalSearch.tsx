@@ -13,58 +13,28 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
     if (!query || query.length < 2) return [];
     const lowerQuery = query.toLowerCase();
 
-    // Search desa from points (extract unique desakel)
-    const desaSet = new Map<string, any>();
-    
-    globalSearchData.points.forEach((p: any) => {
-      const desakel = p.properties?.desakel;
-      const kecamatan = p.properties?.kecamatan;
-      if (desakel && typeof desakel === 'string') {
-        const name = desakel.toLowerCase();
-        if (name.includes(lowerQuery)) {
-          const key = `${name}-${kecamatan?.toLowerCase() || ''}`;
-          if (!desaSet.has(key)) {
-            desaSet.set(key, {
-              name: desakel,
-              kecamatan: kecamatan || '',
-              lng: p.geometry.coordinates[0],
-              lat: p.geometry.coordinates[1]
-            });
-          }
-        }
-      }
-    });
+    // 1. Cari desa dari list desa yang sudah di-ekstrak tipis
+    const desaFromPoints = globalSearchData.desaList
+      .filter((d: any) => d.name.toLowerCase().includes(lowerQuery))
+      .map((d: any) => ({
+        type: 'desa_point',
+        item: d,
+        name: d.name,
+        desc: `Desa${d.kecamatan ? `, Kec. ${d.kecamatan}` : ''}`
+      })).slice(0, 5);
 
-    const desaFromPoints = Array.from(desaSet.values()).map(d => ({
-      type: 'desa_point',
-      item: d,
-      name: d.name,
-      desc: `Desa${d.kecamatan ? `, Kec. ${d.kecamatan}` : ''}`
-    }));
+    // 2. Cari ruas jalan berdasarkan point tipis
+    const ruas = globalSearchData.ruasJalan
+      .filter((r: any) => r.name.toLowerCase().includes(lowerQuery))
+      .slice(0, 5)
+      .map((r: any) => ({
+        type: 'ruas_light',
+        item: r,
+        name: r.name,
+        desc: 'Ruas Jalan'
+      }));
 
-    // Search desa from batasDesa (fallback if any populated)
-    const desaFromVector = globalSearchData.batasDesa.filter((d: any) => {
-      const name = String(d.properties.NAME_4 || '').toLowerCase();
-      return name.includes(lowerQuery);
-    }).map((d: any) => ({ type: 'desa', item: d, name: d.properties.NAME_4 || 'Desa', desc: 'Desa' }));
-
-    // Merge desas, deduplicating by name if possible, and slice top 5
-    const mergedDesaMap = new Map<string, any>();
-    [...desaFromPoints, ...desaFromVector].forEach(d => {
-      const lowerName = d.name.toLowerCase();
-      if (!mergedDesaMap.has(lowerName)) {
-        mergedDesaMap.set(lowerName, d);
-      }
-    });
-    const finalDesa = Array.from(mergedDesaMap.values()).slice(0, 5);
-
-    // Search ruas jalan
-    const ruas = globalSearchData.ruasJalan.filter((r: any) => {
-      const name = String(r.properties.NAMAJALAN || '').toLowerCase();
-      return name.includes(lowerQuery);
-    }).slice(0, 5).map((r: any) => ({ type: 'ruas', item: r, name: r.properties.NAMAJALAN || 'Ruas Jalan', desc: 'Ruas Jalan' }));
-
-    return [...finalDesa, ...ruas];
+    return [...desaFromPoints, ...ruas];
   }, [query, globalSearchData]);
 
   useEffect(() => {
@@ -78,24 +48,9 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
   }, []);
 
   const handleSelect = (result: any) => {
-    // fly to coordinate based on type
-    if (result.type === 'point') {
-      triggerFlyTo(result.item.geometry.coordinates[0], result.item.geometry.coordinates[1]);
-      setSelectedPoint(result.item.properties);
-    } else if (result.type === 'desa_point') {
-      triggerFlyTo(result.item.lng, result.item.lat);
-    } else if (result.type === 'desa' || result.type === 'ruas') {
-      // Just take the first coordinate of the polygon/line ring
-      const coords = result.item.geometry.coordinates;
-      let target = null;
-      // Quick deep coordinate extraction
-      if (result.item.geometry.type === 'LineString') target = coords[0];
-      else if (result.item.geometry.type === 'MultiLineString') target = coords[0][0];
-      else if (result.item.geometry.type === 'Polygon') target = coords[0][0];
-      else if (result.item.geometry.type === 'MultiPolygon') target = coords[0][0][0];
-
-      if (target && target.length >= 2) {
-        triggerFlyTo(target[0], target[1]);
+    if (result.type === 'desa_point' || result.type === 'ruas_light') {
+      if (result.item.lng && result.item.lat) {
+        triggerFlyTo(result.item.lng, result.item.lat);
       }
     }
     setIsOpen(false);

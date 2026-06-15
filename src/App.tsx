@@ -4,6 +4,7 @@ import AdminLayout from './components/admin/AdminLayout'
 import DatabaseEditor from './components/admin/DatabaseEditor'
 import PaketPekerjaanPage from './components/admin/PaketPekerjaanPage'
 import PaketDetail from './components/admin/PaketDetail'
+import MigrasiPage from './components/admin/MigrasiPage'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/" element={<ResponsiveSwitcher />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="database" element={<DatabaseEditor />} />
+            <Route path="migrasi" element={<MigrasiPage />} />
             <Route path="paket-pekerjaan/:tahun" element={<PaketPekerjaanPage />} />
             <Route path="paket/:id" element={<PaketDetail />} />
           </Route>

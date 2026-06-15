@@ -11,18 +11,9 @@ const Sidebar: React.FC = () => {
     asetKategori, setAsetKategori,
     tahunPasang, setTahunPasang,
     displayedCount, globalSearchData,
-    isEditMode, setEditMode
+    isEditMode, setEditMode,
+    availableYears
   } = useAppStore();
-
-  const availableYears = useMemo(() => {
-    const years = new Set<string>();
-    globalSearchData.points.forEach(f => {
-      if (f.properties?.thpasang) {
-        years.add(String(f.properties.thpasang));
-      }
-    });
-    return Array.from(years).sort().reverse();
-  }, [globalSearchData.points]);
 
   const navigate = useNavigate();
 

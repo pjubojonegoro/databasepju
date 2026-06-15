@@ -24,9 +24,11 @@ interface AppState {
   setTahunPasang: (th: string) => void;
   displayedCount: number;
   setDisplayedCount: (count: number) => void;
+  availableYears: string[];
+  setAvailableYears: (years: string[]) => void;
 
-  globalSearchData: { points: any[], batasDesa: any[], ruasJalan: any[] };
-  setGlobalSearchData: (data: { points: any[], batasDesa: any[], ruasJalan: any[] }) => void;
+  globalSearchData: { desaList: { name: string, kecamatan: string, lng: number, lat: number }[], ruasJalan: { name: string, lng: number, lat: number }[] };
+  setGlobalSearchData: (data: { desaList: any[], ruasJalan: any[] }) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -60,6 +62,9 @@ export const useAppStore = create<AppState>((set) => ({
   displayedCount: 0,
   setDisplayedCount: (count) => set({ displayedCount: count }),
 
-  globalSearchData: { points: [], batasDesa: [], ruasJalan: [] },
+  availableYears: [],
+  setAvailableYears: (years) => set({ availableYears: years }),
+
+  globalSearchData: { desaList: [], ruasJalan: [] },
   setGlobalSearchData: (data) => set({ globalSearchData: data }),
 }));
