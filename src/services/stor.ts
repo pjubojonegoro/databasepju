@@ -55,7 +55,7 @@ export async function uploadFotoPJU(file: File, retryCount = 0): Promise<{ key: 
  * Mendapatkan URL untuk menampilkan foto yang sudah diunggah
  * @param fotoId ID Foto atau Key
  */
-export async function getUrlFotoPJU(fotoId: string, retryCount = 0): Promise<string> {
+export async function getUrlFotoPJU(fotoId: string): Promise<string> {
   // Jika URL berupa external link biasa (misal dari data lama)
   if (fotoId.startsWith("http")) {
     return fotoId;

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { BottomSheet } from 'react-spring-bottom-sheet';
 import { useAppStore } from '../../store/useAppStore';
 import { Layers, Box, SlidersHorizontal, Activity, X, CalendarDays } from 'lucide-react';
@@ -16,18 +16,8 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
     tahunPasang, setTahunPasang,
-    displayedCount, globalSearchData
+    displayedCount, availableYears
   } = useAppStore();
-
-  const availableYears = useMemo(() => {
-    const years = new Set<string>();
-    globalSearchData.points.forEach(f => {
-      if (f.properties?.thpasang) {
-        years.add(String(f.properties.thpasang));
-      }
-    });
-    return Array.from(years).sort().reverse();
-  }, [globalSearchData.points]);
 
   const basemaps = [
     { id: 'default', label: 'Default', url: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6' },

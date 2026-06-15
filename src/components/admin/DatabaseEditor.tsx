@@ -20,34 +20,9 @@ const DatabaseEditor: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   // Sorting and Filtering
-  const [sortConfig, setSortConfig] = useState<{ column: string, ascending: boolean } | null>(null);
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const [sortConfig] = useState<{ column: string, ascending: boolean } | null>(null);
+  const [columnFilters] = useState<Record<string, string>>({});
   const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({});
-  const [filterOptions, setFilterOptions] = useState<Record<string, any[]>>({});
-
-  const fetchFilterOptions = async (tab: TableMode) => {
-    const { data } = await supabase.from(tab).select();
-    if (data) {
-      const options: Record<string, any[]> = {};
-      const cols = tab === 'lampu' 
-        ? ['kode', 'panel', 'kategori', 'jenis_lampu', 'tiang', 'thpasang', 'desakel', 'latitude', 'longitude']
-        : ['id_pelanggan', 'nama_pelanggan', 'kategori', 'no_meter', 'daya', 'jml_lampu', 'total_daya', 'alamat', 'thpasang', 'desakel', 'latitude', 'longitude'];
-        
-      cols.forEach(col => {
-        if (col === 'kode' || col === 'panel') return;
-        const unique = Array.from(new Set(data.map(d => d[col]).filter(v => v !== null && v !== '')));
-        options[col] = unique.sort((a, b) => {
-          if (typeof a === 'number' && typeof b === 'number') return a - b;
-          return String(a).localeCompare(String(b));
-        });
-      });
-      setFilterOptions(options);
-    }
-  };
-
-  useEffect(() => {
-    fetchFilterOptions(activeTab);
-  }, [activeTab]);
 
   useEffect(() => {
     const handler = setTimeout(() => {

@@ -7,7 +7,7 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { globalSearchData, triggerFlyTo, setSelectedPoint } = useAppStore();
+  const { globalSearchData, triggerFlyTo } = useAppStore();
 
   const results = useMemo(() => {
     if (!query || query.length < 2) return [];

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, CalendarDays, Move } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ const Sidebar: React.FC = () => {
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
     tahunPasang, setTahunPasang,
-    displayedCount, globalSearchData,
+    displayedCount,
     isEditMode, setEditMode,
     availableYears
   } = useAppStore();
