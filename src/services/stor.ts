@@ -1,37 +1,23 @@
-const CLOUDINARY_CLOUD_NAME = "db08wurru";
-const CLOUDINARY_API_KEY = "978464617553215";
-const CLOUDINARY_API_SECRET = "oxkUXgNudgvA3C1oI5gkOkV4sVo";
-
-// Helper for SHA-1 hashing needed for Cloudinary signature
-async function sha1(str: string): Promise<string> {
-  const buffer = new TextEncoder().encode(str);
-  const hash = await crypto.subtle.digest('SHA-1', buffer);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "db08wurru";
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 // Helper to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Upload foto PJU ke Cloudinary
+ * Upload foto PJU ke Cloudinary (menggunakan Unsigned Upload)
  * @param file Objek File dari input
  * @returns Object berisi key (fotoId)
  */
 export async function uploadFotoPJU(file: File, retryCount = 0): Promise<{ key: string, id?: string }> {
   try {
-    const timestamp = Math.round(new Date().getTime() / 1000).toString();
-    
-    // Cloudinary requires signing the parameters. We sign timestamp.
-    const signatureString = `timestamp=${timestamp}${CLOUDINARY_API_SECRET}`;
-    const signature = await sha1(signatureString);
+    if (!CLOUDINARY_UPLOAD_PRESET) {
+      throw new Error("VITE_CLOUDINARY_UPLOAD_PRESET belum diatur di file .env");
+    }
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("api_key", CLOUDINARY_API_KEY);
-    formData.append("timestamp", timestamp);
-    formData.append("signature", signature);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
     const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
       method: "POST",
