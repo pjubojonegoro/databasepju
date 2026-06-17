@@ -403,16 +403,31 @@ const MapboxViewer: React.FC = () => {
 
 
         const yearsSet = new Set<string>();
+        const panelSearchData: { id_pelanggan: string; nama_pelanggan: string; lng: number; lat: number }[] = [];
+        
         combinedFeatures.forEach((p: any) => {
           if (p.properties?.thpasang) {
             yearsSet.add(String(p.properties.thpasang));
+          }
+          if (p.properties?._sourceTable === 'panel' && p.geometry?.coordinates) {
+            const id_pelanggan = p.properties.id_pelanggan || '';
+            const nama_pelanggan = p.properties.nama_pelanggan || '';
+            if (id_pelanggan || nama_pelanggan) {
+              panelSearchData.push({
+                id_pelanggan,
+                nama_pelanggan,
+                lng: p.geometry.coordinates[0],
+                lat: p.geometry.coordinates[1]
+              });
+            }
           }
         });
         useAppStore.getState().setAvailableYears(Array.from(yearsSet).sort().reverse());
 
         useAppStore.getState().setGlobalSearchData({
           desaList: Array.from(desaSet.values()),
-          ruasJalan: ruasSearch
+          ruasJalan: ruasSearch,
+          panelList: panelSearchData
         });
         addSourcesAndLayers();
         setIsLoading(false);

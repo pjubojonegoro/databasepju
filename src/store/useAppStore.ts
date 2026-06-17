@@ -27,8 +27,8 @@ interface AppState {
   availableYears: string[];
   setAvailableYears: (years: string[]) => void;
 
-  globalSearchData: { desaList: { name: string, kecamatan: string, lng: number, lat: number }[], ruasJalan: { name: string, lng: number, lat: number }[] };
-  setGlobalSearchData: (data: { desaList: any[], ruasJalan: any[] }) => void;
+  globalSearchData: { desaList: { name: string, kecamatan: string, lng: number, lat: number }[], ruasJalan: { name: string, lng: number, lat: number }[], panelList: { id_pelanggan: string, nama_pelanggan: string, lng: number, lat: number }[] };
+  setGlobalSearchData: (data: { desaList: any[], ruasJalan: any[], panelList: any[] }) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -65,6 +65,6 @@ export const useAppStore = create<AppState>((set) => ({
   availableYears: [],
   setAvailableYears: (years) => set({ availableYears: years }),
 
-  globalSearchData: { desaList: [], ruasJalan: [] },
+  globalSearchData: { desaList: [], ruasJalan: [], panelList: [] },
   setGlobalSearchData: (data) => set({ globalSearchData: data }),
 }));

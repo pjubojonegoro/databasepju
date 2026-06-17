@@ -34,7 +34,21 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
         desc: 'Ruas Jalan'
       }));
 
-    return [...desaFromPoints, ...ruas];
+    // 3. Cari panel berdasarkan id atau nama pelanggan
+    const panels = (globalSearchData.panelList || [])
+      .filter((p: any) => 
+        p.nama_pelanggan.toLowerCase().includes(lowerQuery) || 
+        p.id_pelanggan.toLowerCase().includes(lowerQuery)
+      )
+      .slice(0, 5)
+      .map((p: any) => ({
+        type: 'panel_light',
+        item: p,
+        name: p.nama_pelanggan || p.id_pelanggan,
+        desc: `Panel (ID: ${p.id_pelanggan})`
+      }));
+
+    return [...desaFromPoints, ...ruas, ...panels];
   }, [query, globalSearchData]);
 
   useEffect(() => {
@@ -48,7 +62,7 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
   }, []);
 
   const handleSelect = (result: any) => {
-    if (result.type === 'desa_point' || result.type === 'ruas_light') {
+    if (result.type === 'desa_point' || result.type === 'ruas_light' || result.type === 'panel_light') {
       if (result.item.lng && result.item.lat) {
         triggerFlyTo(result.item.lng, result.item.lat);
       }
@@ -69,7 +83,7 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Cari desa atau ruas jalan..."
+          placeholder="Cari desa, jalan, atau panel..."
           className="bg-transparent border-none outline-none text-white w-full text-sm placeholder-slate-400 focus:ring-0"
         />
         {query && (
