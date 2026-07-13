@@ -44,7 +44,7 @@ const MobileLayout: React.FC = () => {
           </button>
           <button
             onClick={() => navigate('/admin/database')}
-            className="h-12 w-12 rounded-full bg-indigo-600/90 backdrop-blur-md border border-indigo-500 flex items-center justify-center text-white shadow-xl hover:bg-indigo-500 transition-colors mt-2"
+            className="hidden h-12 w-12 rounded-full bg-indigo-600/90 backdrop-blur-md border border-indigo-500 items-center justify-center text-white shadow-xl hover:bg-indigo-500 transition-colors mt-2"
           >
             <Database size={20} />
           </button>
