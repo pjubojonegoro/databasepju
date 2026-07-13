@@ -1,7 +1,7 @@
 import React from 'react';
 import { BottomSheet } from 'react-spring-bottom-sheet';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Box, SlidersHorizontal, Activity, X, CalendarDays, MapPin } from 'lucide-react';
+import { Layers, Box, SlidersHorizontal, Activity, X, MapPin } from 'lucide-react';
 import 'react-spring-bottom-sheet/dist/style.css';
 
 interface FilterBottomSheetProps {
@@ -15,10 +15,9 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
     showBatasDesa, setShowBatasDesa,
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
-    tahunPasang, setTahunPasang,
     filterDesaKel, setFilterDesaKel,
     filterKecamatan, setFilterKecamatan,
-    displayedCount, availableYears, availableDesaKel, availableKecamatan
+    displayedCount, availableDesaKel, availableKecamatan
   } = useAppStore();
 
   const basemaps = [

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, CalendarDays, Move, MapPin } from 'lucide-react';
+import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, Move, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Sidebar: React.FC = () => {
@@ -9,12 +9,11 @@ const Sidebar: React.FC = () => {
     showBatasDesa, setShowBatasDesa,
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
-    tahunPasang, setTahunPasang,
     filterDesaKel, setFilterDesaKel,
     filterKecamatan, setFilterKecamatan,
     displayedCount,
     isEditMode, setEditMode,
-    availableYears, availableDesaKel, availableKecamatan
+    availableDesaKel, availableKecamatan
   } = useAppStore();
 
   const navigate = useNavigate();
