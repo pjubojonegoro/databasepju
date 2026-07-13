@@ -15,11 +15,12 @@ const MapboxViewer: React.FC = () => {
   const {
     setSelectedPoint, flyToState,
     basemapStyle, showBatasDesa, activeDataset, asetKategori, tahunPasang,
+    filterDesaKel, filterKecamatan,
     setDisplayedCount, selectedPoint, isEditMode
   } = useAppStore();
 
   // Keep a ref so applyFilters can always reach the latest state
-  const filterStateRef = useRef({ activeDataset, asetKategori, tahunPasang, setDisplayedCount });
+  const filterStateRef = useRef({ activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan, setDisplayedCount });
 
   const mapDataRef = useRef<{ combinedFeatures: any[], ruasJalanData: any } | null>(null);
 
@@ -424,8 +425,15 @@ const MapboxViewer: React.FC = () => {
         });
         useAppStore.getState().setAvailableYears(Array.from(yearsSet).sort().reverse());
 
+        const desaList = Array.from(desaSet.values());
+        const allDesa = Array.from(new Set(desaList.map(d => d.name))).sort();
+        const allKecamatan = Array.from(new Set(desaList.map(d => d.kecamatan).filter(k => k))).sort();
+        
+        useAppStore.getState().setAvailableDesaKel(allDesa);
+        useAppStore.getState().setAvailableKecamatan(allKecamatan);
+
         useAppStore.getState().setGlobalSearchData({
-          desaList: Array.from(desaSet.values()),
+          desaList: desaList,
           ruasJalan: ruasSearch,
           panelList: panelSearchData
         });
@@ -449,7 +457,7 @@ const MapboxViewer: React.FC = () => {
   const applyFilters = () => {
     if (!map.current || !map.current.getLayer('points-layer')) return;
 
-    const { activeDataset: ds, asetKategori: kat, tahunPasang: th, setDisplayedCount: setCount } = filterStateRef.current;
+    const { activeDataset: ds, asetKategori: kat, tahunPasang: th, filterDesaKel: fDesa, filterKecamatan: fKec, setDisplayedCount: setCount } = filterStateRef.current;
 
     const filterList: any[] = ['all'];
 
@@ -471,6 +479,14 @@ const MapboxViewer: React.FC = () => {
       ]);
     }
 
+    if (fDesa !== 'Semua') {
+      filterList.push(['==', ['get', 'desakel'], fDesa]);
+    }
+
+    if (fKec !== 'Semua') {
+      filterList.push(['==', ['get', 'kecamatan'], fKec]);
+    }
+
     // Safe application of mapbox filter. If it's just ['all'], we set null.
     const resolvedFilter = filterList.length > 1 ? filterList : null;
     map.current.setFilter('points-layer', resolvedFilter);
@@ -487,6 +503,8 @@ const MapboxViewer: React.FC = () => {
         if (ds === 'Panel' && src !== 'panel') return false;
         if (kat !== 'Semua' && kgr !== kat) return false;
         if (th !== 'Semua' && String(f.properties?.thpasang) !== th) return false;
+        if (fDesa !== 'Semua' && f.properties?.desakel !== fDesa) return false;
+        if (fKec !== 'Semua' && f.properties?.kecamatan !== fKec) return false;
         return true;
       });
       setCount(visible.length);
@@ -501,9 +519,9 @@ const MapboxViewer: React.FC = () => {
 
   // Keep the ref in sync so applyFilters always uses fresh values
   useEffect(() => {
-    filterStateRef.current = { activeDataset, asetKategori, tahunPasang, setDisplayedCount };
+    filterStateRef.current = { activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan, setDisplayedCount };
     applyFilters();
-  }, [activeDataset, asetKategori, tahunPasang]);
+  }, [activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan]);
 
   useEffect(() => {
     if (map.current) {

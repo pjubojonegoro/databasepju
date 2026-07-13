@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, CalendarDays, Move } from 'lucide-react';
+import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, CalendarDays, Move, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Sidebar: React.FC = () => {
@@ -10,9 +10,11 @@ const Sidebar: React.FC = () => {
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
     tahunPasang, setTahunPasang,
+    filterDesaKel, setFilterDesaKel,
+    filterKecamatan, setFilterKecamatan,
     displayedCount,
     isEditMode, setEditMode,
-    availableYears
+    availableYears, availableDesaKel, availableKecamatan
   } = useAppStore();
 
   const navigate = useNavigate();
@@ -38,7 +40,7 @@ const Sidebar: React.FC = () => {
       <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-6">
 
         {/* Basemap Selection */}
-        <section>
+        <section className="hidden">
           <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
             <Layers size={16} />
             Basemap
@@ -133,21 +135,44 @@ const Sidebar: React.FC = () => {
           </div>
         </section>
 
-        {/* Tahun Pasang Filter */}
+        {/* Kecamatan Filter */}
         <section>
           <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
-            <CalendarDays size={16} />
-            Tahun Pasang
+            <MapPin size={16} />
+            Kecamatan
           </h2>
           <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 overflow-hidden relative">
             <select
-              value={tahunPasang}
-              onChange={(e) => setTahunPasang(e.target.value)}
+              value={filterKecamatan}
+              onChange={(e) => setFilterKecamatan(e.target.value)}
               className="w-full bg-transparent text-slate-300 text-sm font-medium p-3 outline-none appearance-none cursor-pointer z-10 relative"
             >
-              <option value="Semua" className="bg-slate-800">Semua Tahun</option>
-              {availableYears.map(year => (
-                <option key={year} value={year} className="bg-slate-800">{year}</option>
+              <option value="Semua" className="bg-slate-800">Semua Kecamatan</option>
+              {availableKecamatan.map(kec => (
+                <option key={kec} value={kec} className="bg-slate-800">{kec}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+        </section>
+
+        {/* Desa/Kelurahan Filter */}
+        <section>
+          <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+            <MapPin size={16} />
+            Desa / Kelurahan
+          </h2>
+          <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 overflow-hidden relative">
+            <select
+              value={filterDesaKel}
+              onChange={(e) => setFilterDesaKel(e.target.value)}
+              className="w-full bg-transparent text-slate-300 text-sm font-medium p-3 outline-none appearance-none cursor-pointer z-10 relative"
+            >
+              <option value="Semua" className="bg-slate-800">Semua Desa/Kelurahan</option>
+              {availableDesaKel.map(desa => (
+                <option key={desa} value={desa} className="bg-slate-800">{desa}</option>
               ))}
             </select>
             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
@@ -159,7 +184,7 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Editor Button */}
-      <div className="px-4 py-3 bg-slate-900 border-t border-slate-800 flex flex-col gap-2">
+      <div className="hidden px-4 py-3 bg-slate-900 border-t border-slate-800 flex-col gap-2">
         <button
           onClick={() => setEditMode(!isEditMode)}
           className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all font-semibold text-sm shadow-sm border ${

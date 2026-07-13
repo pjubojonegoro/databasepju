@@ -1,7 +1,7 @@
 import React from 'react';
 import { BottomSheet } from 'react-spring-bottom-sheet';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Box, SlidersHorizontal, Activity, X, CalendarDays } from 'lucide-react';
+import { Layers, Box, SlidersHorizontal, Activity, X, CalendarDays, MapPin } from 'lucide-react';
 import 'react-spring-bottom-sheet/dist/style.css';
 
 interface FilterBottomSheetProps {
@@ -16,7 +16,9 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
     activeDataset, setActiveDataset,
     asetKategori, setAsetKategori,
     tahunPasang, setTahunPasang,
-    displayedCount, availableYears
+    filterDesaKel, setFilterDesaKel,
+    filterKecamatan, setFilterKecamatan,
+    displayedCount, availableYears, availableDesaKel, availableKecamatan
   } = useAppStore();
 
   const basemaps = [
@@ -61,7 +63,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
       <div className="px-5 pb-8 pt-2 space-y-6">
 
         {/* Basemap Selection */}
-        <section>
+        <section className="hidden">
           <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
             <Layers size={16} />
             Basemap
@@ -145,21 +147,44 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
           </div>
         </section>
 
-        {/* Tahun Pasang Filter */}
+        {/* Kecamatan Filter */}
         <section>
           <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
-            <CalendarDays size={16} />
-            Tahun Pasang
+            <MapPin size={16} />
+            Kecamatan
           </h3>
           <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/50 overflow-hidden relative">
             <select
-              value={tahunPasang}
-              onChange={(e) => setTahunPasang(e.target.value)}
+              value={filterKecamatan}
+              onChange={(e) => setFilterKecamatan(e.target.value)}
               className="w-full bg-transparent text-slate-700 dark:text-slate-300 text-sm font-semibold p-4 outline-none appearance-none cursor-pointer z-10 relative"
             >
-              <option value="Semua" className="bg-white dark:bg-slate-800">Semua Tahun</option>
-              {availableYears.map(year => (
-                <option key={year} value={year} className="bg-white dark:bg-slate-800">{year}</option>
+              <option value="Semua" className="bg-white dark:bg-slate-800">Semua Kecamatan</option>
+              {availableKecamatan.map(kec => (
+                <option key={kec} value={kec} className="bg-white dark:bg-slate-800">{kec}</option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+        </section>
+
+        {/* Desa/Kelurahan Filter */}
+        <section>
+          <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+            <MapPin size={16} />
+            Desa / Kelurahan
+          </h3>
+          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/50 overflow-hidden relative">
+            <select
+              value={filterDesaKel}
+              onChange={(e) => setFilterDesaKel(e.target.value)}
+              className="w-full bg-transparent text-slate-700 dark:text-slate-300 text-sm font-semibold p-4 outline-none appearance-none cursor-pointer z-10 relative"
+            >
+              <option value="Semua" className="bg-white dark:bg-slate-800">Semua Desa/Kelurahan</option>
+              {availableDesaKel.map(desa => (
+                <option key={desa} value={desa} className="bg-white dark:bg-slate-800">{desa}</option>
               ))}
             </select>
             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">

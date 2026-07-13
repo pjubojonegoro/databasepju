@@ -26,6 +26,15 @@ interface AppState {
   setDisplayedCount: (count: number) => void;
   availableYears: string[];
   setAvailableYears: (years: string[]) => void;
+  
+  filterDesaKel: string;
+  setFilterDesaKel: (desa: string) => void;
+  filterKecamatan: string;
+  setFilterKecamatan: (kecamatan: string) => void;
+  availableDesaKel: string[];
+  setAvailableDesaKel: (desas: string[]) => void;
+  availableKecamatan: string[];
+  setAvailableKecamatan: (kecamatans: string[]) => void;
 
   globalSearchData: { desaList: { name: string, kecamatan: string, lng: number, lat: number }[], ruasJalan: { name: string, lng: number, lat: number }[], panelList: { id_pelanggan: string, nama_pelanggan: string, lng: number, lat: number }[] };
   setGlobalSearchData: (data: { desaList: any[], ruasJalan: any[], panelList: any[] }) => void;
@@ -64,6 +73,15 @@ export const useAppStore = create<AppState>((set) => ({
 
   availableYears: [],
   setAvailableYears: (years) => set({ availableYears: years }),
+  
+  filterDesaKel: 'Semua',
+  setFilterDesaKel: (desa) => set({ filterDesaKel: desa }),
+  filterKecamatan: 'Semua',
+  setFilterKecamatan: (kecamatan) => set({ filterKecamatan: kecamatan }),
+  availableDesaKel: [],
+  setAvailableDesaKel: (desas) => set({ availableDesaKel: desas }),
+  availableKecamatan: [],
+  setAvailableKecamatan: (kecamatans) => set({ availableKecamatan: kecamatans }),
 
   globalSearchData: { desaList: [], ruasJalan: [], panelList: [] },
   setGlobalSearchData: (data) => set({ globalSearchData: data }),
