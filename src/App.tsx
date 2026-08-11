@@ -9,7 +9,7 @@ import MigrasiPage from './components/admin/MigrasiPage'
 function App() {
   return (
     <div className="w-full h-screen overflow-hidden bg-slate-950 text-white">
-      <Router>
+      <Router basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/" element={<ResponsiveSwitcher />} />
           <Route path="/admin" element={<AdminLayout />}>
