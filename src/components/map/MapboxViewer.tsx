@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { fetchLampuDataGeoJSON, fetchPanelDataGeoJSON, supabase } from '../../services/supabase';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+mapboxgl.accessToken = (import.meta.env.VITE_MAPBOX_TOKEN || import.meta.env.NEXT_PUBLIC_MAPBOX_TOKEN || '') as string;
 
 const MapboxViewer: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -16,11 +16,12 @@ const MapboxViewer: React.FC = () => {
     setSelectedPoint, flyToState,
     basemapStyle, showBatasDesa, activeDataset, asetKategori, tahunPasang,
     filterDesaKel, filterKecamatan,
+    filterJenisLampu, filterJenisTiang,
     setDisplayedCount, selectedPoint, isEditMode
   } = useAppStore();
 
   // Keep a ref so applyFilters can always reach the latest state
-  const filterStateRef = useRef({ activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan, setDisplayedCount });
+  const filterStateRef = useRef({ activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan, filterJenisLampu, filterJenisTiang, setDisplayedCount });
 
   const mapDataRef = useRef<{ combinedFeatures: any[], ruasJalanData: any } | null>(null);
 
@@ -68,9 +69,9 @@ const MapboxViewer: React.FC = () => {
            const confirmSave = window.confirm(`Apakah Anda yakin ingin menyimpan posisi baru ini?`);
            if (confirmSave) {
               try {
-                 const table = sp._sourceTable as 'lampu' | 'panel';
+                 const tableName = sp._sourceTable === 'lampu' ? 'lampu_satudata' : 'panel';
                  const { error } = await supabase
-                    .from(table)
+                    .from(tableName)
                     .update({ longitude: lngLat.lng, latitude: lngLat.lat })
                     .eq('id', sp.id);
                  
@@ -278,28 +279,12 @@ const MapboxViewer: React.FC = () => {
 
           m.on('mouseenter', 'points-layer', () => { m.getCanvas().style.cursor = 'pointer'; });
           m.on('mouseleave', 'points-layer', () => { m.getCanvas().style.cursor = ''; });
-          m.on('click', 'points-layer', async (e) => {
+          m.on('click', 'points-layer', (e) => {
             if (!e.features || e.features.length === 0) return;
             e.originalEvent.stopPropagation();
             
             const props = e.features[0].properties as any;
-            try {
-              const table = props._sourceTable === 'lampu' ? 'lampu' : 'panel';
-              const { data, error } = await supabase
-                .from(table)
-                .select('*')
-                .eq('id', props.id)
-                .single();
-                
-              if (!error && data) {
-                setSelectedPoint({ ...data, _sourceTable: props._sourceTable });
-              } else {
-                setSelectedPoint(props);
-              }
-            } catch (err) {
-              console.error('Error fetching point details:', err);
-              setSelectedPoint(props);
-            }
+            setSelectedPoint(props);
           });
 
           // Klik di area kosong peta → tutup popup
@@ -404,11 +389,23 @@ const MapboxViewer: React.FC = () => {
 
 
         const yearsSet = new Set<string>();
+        const jenisLampuSet = new Set<string>();
+        const tiangSet = new Set<string>();
         const panelSearchData: { id_pelanggan: string; nama_pelanggan: string; lng: number; lat: number }[] = [];
         
         combinedFeatures.forEach((p: any) => {
           if (p.properties?.thpasang) {
             yearsSet.add(String(p.properties.thpasang));
+          }
+          if (p.properties?._sourceTable === 'lampu') {
+            const jl = p.properties.jenis_lampu ? String(p.properties.jenis_lampu).trim() : '';
+            if (jl && jl !== '-' && jl !== '- -') {
+              jenisLampuSet.add(jl);
+            }
+            const tg = p.properties.tiang ? String(p.properties.tiang).trim() : '';
+            if (tg && tg !== '-' && tg !== '- -') {
+              tiangSet.add(tg);
+            }
           }
           if (p.properties?._sourceTable === 'panel' && p.geometry?.coordinates) {
             const id_pelanggan = p.properties.id_pelanggan || '';
@@ -424,6 +421,8 @@ const MapboxViewer: React.FC = () => {
           }
         });
         useAppStore.getState().setAvailableYears(Array.from(yearsSet).sort().reverse());
+        useAppStore.getState().setAvailableJenisLampu(Array.from(jenisLampuSet).sort());
+        useAppStore.getState().setAvailableJenisTiang(Array.from(tiangSet).sort());
 
         const desaList = Array.from(desaSet.values());
         const allDesa = Array.from(new Set(desaList.map(d => d.name))).sort();
@@ -457,7 +456,16 @@ const MapboxViewer: React.FC = () => {
   const applyFilters = () => {
     if (!map.current || !map.current.getLayer('points-layer')) return;
 
-    const { activeDataset: ds, asetKategori: kat, tahunPasang: th, filterDesaKel: fDesa, filterKecamatan: fKec, setDisplayedCount: setCount } = filterStateRef.current;
+    const {
+      activeDataset: ds,
+      asetKategori: kat,
+      tahunPasang: th,
+      filterDesaKel: fDesa,
+      filterKecamatan: fKec,
+      filterJenisLampu: fJL,
+      filterJenisTiang: fTiang,
+      setDisplayedCount: setCount
+    } = filterStateRef.current;
 
     const filterList: any[] = ['all'];
 
@@ -487,6 +495,14 @@ const MapboxViewer: React.FC = () => {
       filterList.push(['==', ['get', 'kecamatan'], fKec]);
     }
 
+    if (fJL !== 'Semua') {
+      filterList.push(['==', ['get', 'jenis_lampu'], fJL]);
+    }
+
+    if (fTiang !== 'Semua') {
+      filterList.push(['==', ['get', 'tiang'], fTiang]);
+    }
+
     // Safe application of mapbox filter. If it's just ['all'], we set null.
     const resolvedFilter = filterList.length > 1 ? filterList : null;
     map.current.setFilter('points-layer', resolvedFilter);
@@ -505,6 +521,8 @@ const MapboxViewer: React.FC = () => {
         if (th !== 'Semua' && String(f.properties?.thpasang) !== th) return false;
         if (fDesa !== 'Semua' && f.properties?.desakel !== fDesa) return false;
         if (fKec !== 'Semua' && f.properties?.kecamatan !== fKec) return false;
+        if (fJL !== 'Semua' && f.properties?.jenis_lampu !== fJL) return false;
+        if (fTiang !== 'Semua' && f.properties?.tiang !== fTiang) return false;
         return true;
       });
       setCount(visible.length);
@@ -519,9 +537,9 @@ const MapboxViewer: React.FC = () => {
 
   // Keep the ref in sync so applyFilters always uses fresh values
   useEffect(() => {
-    filterStateRef.current = { activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan, setDisplayedCount };
+    filterStateRef.current = { activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan, filterJenisLampu, filterJenisTiang, setDisplayedCount };
     applyFilters();
-  }, [activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan]);
+  }, [activeDataset, asetKategori, tahunPasang, filterDesaKel, filterKecamatan, filterJenisLampu, filterJenisTiang]);
 
   useEffect(() => {
     if (map.current) {

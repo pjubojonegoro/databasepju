@@ -12,6 +12,11 @@ export interface PjuPoint {
   latitude: number;
   longitude: number;
   foto: string | null;
+  ruas?: string | null;
+  kondisi_lampu?: string | null;
+  kondisi_tiang?: string | null;
+  status_jalan?: string | null;
+  daya?: string | null;
   _sourceTable?: 'lampu' | 'panel';
 }
 

@@ -75,8 +75,8 @@ const DesktopPopup: React.FC = () => {
           />
           <InfoRow
             icon={<Settings size={14} />}
-            label="Tinggi Tiang"
-            value={(selectedPoint as any).tiang ? `${(selectedPoint as any).tiang} m` : '-'}
+            label="Jenis Tiang"
+            value={isLampu && (selectedPoint as any).tiang ? (selectedPoint as any).tiang : '-'}
           />
           <InfoRow
             icon={<Calendar size={14} />}

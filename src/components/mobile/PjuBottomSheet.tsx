@@ -78,7 +78,7 @@ const PjuBottomSheet: React.FC = () => {
             />
             <InfoCard 
               icon={<Settings size={18} />}
-              label="Tinggi Tiang"
+              label="Jenis Tiang"
               value={'tiang' in selectedPoint && selectedPoint.tiang ? `${selectedPoint.tiang}` : '-'}
             />
             <InfoCard 

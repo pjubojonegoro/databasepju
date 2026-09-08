@@ -36,6 +36,16 @@ interface AppState {
   availableKecamatan: string[];
   setAvailableKecamatan: (kecamatans: string[]) => void;
 
+  filterJenisLampu: string;
+  setFilterJenisLampu: (jenis: string) => void;
+  availableJenisLampu: string[];
+  setAvailableJenisLampu: (list: string[]) => void;
+
+  filterJenisTiang: string;
+  setFilterJenisTiang: (tiang: string) => void;
+  availableJenisTiang: string[];
+  setAvailableJenisTiang: (list: string[]) => void;
+
   globalSearchData: { desaList: { name: string, kecamatan: string, lng: number, lat: number }[], ruasJalan: { name: string, lng: number, lat: number }[], panelList: { id_pelanggan: string, nama_pelanggan: string, lng: number, lat: number }[] };
   setGlobalSearchData: (data: { desaList: any[], ruasJalan: any[], panelList: any[] }) => void;
 }
@@ -82,6 +92,16 @@ export const useAppStore = create<AppState>((set) => ({
   setAvailableDesaKel: (desas) => set({ availableDesaKel: desas }),
   availableKecamatan: [],
   setAvailableKecamatan: (kecamatans) => set({ availableKecamatan: kecamatans }),
+
+  filterJenisLampu: 'Semua',
+  setFilterJenisLampu: (jenis) => set({ filterJenisLampu: jenis }),
+  availableJenisLampu: [],
+  setAvailableJenisLampu: (list) => set({ availableJenisLampu: list }),
+
+  filterJenisTiang: 'Semua',
+  setFilterJenisTiang: (tiang) => set({ filterJenisTiang: tiang }),
+  availableJenisTiang: [],
+  setAvailableJenisTiang: (list) => set({ availableJenisTiang: list }),
 
   globalSearchData: { desaList: [], ruasJalan: [], panelList: [] },
   setGlobalSearchData: (data) => set({ globalSearchData: data }),

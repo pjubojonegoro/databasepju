@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, Database, Move, MapPin } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Layers, Map as MapIcon, Box, SlidersHorizontal, Activity, MapPin, Lightbulb, UtilityPole, RefreshCw } from 'lucide-react';
+import { fetchLampuDataGeoJSON, fetchPanelDataGeoJSON } from '../../services/supabase';
 
 const Sidebar: React.FC = () => {
   const {
@@ -11,12 +11,30 @@ const Sidebar: React.FC = () => {
     asetKategori, setAsetKategori,
     filterDesaKel, setFilterDesaKel,
     filterKecamatan, setFilterKecamatan,
+    filterJenisLampu, setFilterJenisLampu,
+    availableJenisLampu,
+    filterJenisTiang, setFilterJenisTiang,
+    availableJenisTiang,
     displayedCount,
-    isEditMode, setEditMode,
     availableDesaKel, availableKecamatan
   } = useAppStore();
 
-  const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleSyncData = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        fetchLampuDataGeoJSON(true),
+        fetchPanelDataGeoJSON(true)
+      ]);
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to refresh data:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const basemaps = [
     { id: 'default', label: 'Default', url: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6' },
@@ -180,37 +198,60 @@ const Sidebar: React.FC = () => {
           </div>
         </section>
 
+        {/* Jenis Lampu Filter (Khusus data Lampu) */}
+        {activeDataset !== 'Panel' && (
+          <section>
+            <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+              <Lightbulb size={16} />
+              Jenis Lampu
+            </h2>
+            <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 overflow-hidden relative">
+              <select
+                value={filterJenisLampu}
+                onChange={(e) => setFilterJenisLampu(e.target.value)}
+                className="w-full bg-transparent text-slate-300 text-sm font-medium p-3 outline-none appearance-none cursor-pointer z-10 relative"
+              >
+                <option value="Semua" className="bg-slate-800">Semua Jenis Lampu</option>
+                {availableJenisLampu.map(jenis => (
+                  <option key={jenis} value={jenis} className="bg-slate-800">{jenis}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Jenis Tiang Filter (Khusus data Lampu) */}
+        {activeDataset !== 'Panel' && (
+          <section>
+            <h2 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
+              <UtilityPole size={16} />
+              Jenis Tiang
+            </h2>
+            <div className="bg-slate-800/40 rounded-xl border border-slate-700/50 overflow-hidden relative">
+              <select
+                value={filterJenisTiang}
+                onChange={(e) => setFilterJenisTiang(e.target.value)}
+                className="w-full bg-transparent text-slate-300 text-sm font-medium p-3 outline-none appearance-none cursor-pointer z-10 relative"
+              >
+                <option value="Semua" className="bg-slate-800">Semua Jenis Tiang</option>
+                {availableJenisTiang.map(tiang => (
+                  <option key={tiang} value={tiang} className="bg-slate-800">{tiang}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+          </section>
+        )}
+
       </div>
 
-      {/* Editor Button */}
-      <div className="hidden px-4 py-3 bg-slate-900 border-t border-slate-800 flex-col gap-2">
-        <button
-          onClick={() => setEditMode(!isEditMode)}
-          className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all font-semibold text-sm shadow-sm border ${
-            isEditMode 
-            ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 hover:bg-amber-500/30' 
-            : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Move size={16} />
-            Mode Ubah Posisi
-          </div>
-          <div className={`w-8 h-4 rounded-full relative transition-colors ${isEditMode ? 'bg-amber-500' : 'bg-slate-600'}`}>
-             <div className={`absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all`} style={{ left: isEditMode ? '18px' : '2px' }} />
-          </div>
-        </button>
-        <button
-          onClick={() => navigate('/admin/database')}
-          className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 hover:border-indigo-500 rounded-xl transition-all font-semibold text-sm shadow-sm"
-        >
-          <Database size={16} />
-          Database Editor
-        </button>
-      </div>
-
-      {/* Statistics Footer */}
-      <div className="p-4 bg-slate-900 border-t border-slate-800">
+      {/* Statistics & Cache Sync Footer */}
+      <div className="p-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-3 text-slate-400">
           <Activity size={18} className="text-emerald-500" />
           <div className="flex flex-col">
@@ -220,6 +261,14 @@ const Sidebar: React.FC = () => {
             </span>
           </div>
         </div>
+        <button
+          onClick={handleSyncData}
+          disabled={isRefreshing}
+          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors border border-slate-700/50"
+          title="Sinkronkan & Muat Ulang Data dari Database"
+        >
+          <RefreshCw size={16} className={isRefreshing ? "animate-spin text-blue-400" : ""} />
+        </button>
       </div>
     </div>
   );
