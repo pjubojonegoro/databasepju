@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import MapboxViewer from '../map/MapboxViewer';
 import PjuBottomSheet from '../mobile/PjuBottomSheet';
 import FilterBottomSheet from '../mobile/FilterBottomSheet';
-import { MapPin, SlidersHorizontal } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
+import { MapPin, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { useAppStore, requestUserLocation } from '../../store/useAppStore';
 import GlobalSearch from '../ui/GlobalSearch';
 
 const MobileLayout: React.FC = () => {
   const [isFilterOpen, setFilterOpen] = useState(false);
+  const { isLocating, userLocation } = useAppStore();
 
   return (
     <div className="h-screen w-full relative">
@@ -20,19 +21,20 @@ const MobileLayout: React.FC = () => {
         </div>
         <div className="flex flex-col gap-2 pointer-events-auto">
           <button
-            onClick={() => {
-              if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                  useAppStore.getState().triggerFlyTo(
-                    pos.coords.longitude,
-                    pos.coords.latitude
-                  );
-                });
-              }
-            }}
-            className="h-12 w-12 rounded-full bg-blue-600/90 backdrop-blur-md border border-blue-500 flex items-center justify-center text-white shadow-xl hover:bg-blue-500 transition-colors"
+            onClick={requestUserLocation}
+            disabled={isLocating}
+            title="Lokasi Terkini"
+            className={`h-12 w-12 rounded-full backdrop-blur-md border flex items-center justify-center text-white shadow-xl transition-all ${
+              userLocation
+                ? 'bg-blue-600 border-blue-400 shadow-blue-500/50 ring-2 ring-blue-400/60'
+                : 'bg-blue-600/90 border-blue-500 hover:bg-blue-500 active:scale-95'
+            }`}
           >
-            <MapPin size={20} />
+            {isLocating ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <MapPin size={20} className={userLocation ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : ''} />
+            )}
           </button>
           <button
             onClick={() => setFilterOpen(true)}

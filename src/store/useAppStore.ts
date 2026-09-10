@@ -9,6 +9,11 @@ interface AppState {
   isMobileSheetOpen: boolean;
   setMobileSheetOpen: (isOpen: boolean) => void;
 
+  userLocation: { lng: number; lat: number } | null;
+  setUserLocation: (location: { lng: number; lat: number } | null) => void;
+  isLocating: boolean;
+  setIsLocating: (isLocating: boolean) => void;
+
   // New States for Map Filters
   isEditMode: boolean;
   setEditMode: (mode: boolean) => void;
@@ -60,6 +65,11 @@ export const useAppStore = create<AppState>((set) => ({
   isMobileSheetOpen: false,
   setMobileSheetOpen: (isOpen) => set({ isMobileSheetOpen: isOpen }),
 
+  userLocation: null,
+  setUserLocation: (location) => set({ userLocation: location }),
+  isLocating: false,
+  setIsLocating: (isLocating) => set({ isLocating }),
+
   isEditMode: false,
   setEditMode: (mode) => set({ isEditMode: mode, selectedPoint: null }),
 
@@ -106,3 +116,56 @@ export const useAppStore = create<AppState>((set) => ({
   globalSearchData: { desaList: [], ruasJalan: [], panelList: [] },
   setGlobalSearchData: (data) => set({ globalSearchData: data }),
 }));
+
+let userLocationWatchId: number | null = null;
+
+export const requestUserLocation = () => {
+  if (!("geolocation" in navigator)) {
+    alert("Geolocation tidak didukung oleh browser Anda.");
+    return;
+  }
+
+  useAppStore.getState().setIsLocating(true);
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { longitude, latitude } = pos.coords;
+      useAppStore.getState().setUserLocation({ lng: longitude, lat: latitude });
+      useAppStore.getState().triggerFlyTo(longitude, latitude);
+      useAppStore.getState().setIsLocating(false);
+
+      // Start background position tracking so marker tracks live movements
+      if (userLocationWatchId === null) {
+        userLocationWatchId = navigator.geolocation.watchPosition(
+          (watchPos) => {
+            useAppStore.getState().setUserLocation({
+              lng: watchPos.coords.longitude,
+              lat: watchPos.coords.latitude,
+            });
+          },
+          (err) => console.warn('Gagal memperbarui watchPosition:', err),
+          { enableHighAccuracy: true, maximumAge: 5000 }
+        );
+      }
+    },
+    (err) => {
+      useAppStore.getState().setIsLocating(false);
+      console.error("Gagal mendapatkan lokasi:", err);
+      let msg = "Gagal mendeteksi lokasi saat ini.";
+      if (err.code === 1) {
+        msg = "Akses lokasi ditolak. Mohon aktifkan izin lokasi di browser Anda.";
+      } else if (err.code === 2) {
+        msg = "Informasi lokasi tidak tersedia saat ini.";
+      } else if (err.code === 3) {
+        msg = "Waktu permintaan lokasi habis (timeout). Silakan coba lagi.";
+      }
+      alert(msg);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    }
+  );
+};
+

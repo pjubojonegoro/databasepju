@@ -17,7 +17,8 @@ const MapboxViewer: React.FC = () => {
     basemapStyle, showBatasDesa, activeDataset, asetKategori, tahunPasang,
     filterDesaKel, filterKecamatan,
     filterJenisLampu, filterJenisTiang,
-    setDisplayedCount, selectedPoint, isEditMode
+    setDisplayedCount, selectedPoint, isEditMode,
+    userLocation
   } = useAppStore();
 
   // Keep a ref so applyFilters can always reach the latest state
@@ -26,6 +27,7 @@ const MapboxViewer: React.FC = () => {
   const mapDataRef = useRef<{ combinedFeatures: any[], ruasJalanData: any } | null>(null);
 
   const draggableMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const userLocationMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const selectedPointRef = useRef(selectedPoint);
 
   useEffect(() => {
@@ -344,6 +346,9 @@ const MapboxViewer: React.FC = () => {
     map.current.on('style.load', () => {
       // Re-add sources and layers when style changes
       if (mapDataRef.current) addSourcesAndLayers();
+      if (userLocationMarkerRef.current && map.current) {
+        userLocationMarkerRef.current.addTo(map.current);
+      }
     });
 
     const loadInitialData = async () => {
@@ -448,6 +453,14 @@ const MapboxViewer: React.FC = () => {
     map.current.on('load', loadInitialData);
 
     return () => {
+      if (userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.remove();
+        userLocationMarkerRef.current = null;
+      }
+      if (draggableMarkerRef.current) {
+        draggableMarkerRef.current.remove();
+        draggableMarkerRef.current = null;
+      }
       if (map.current) map.current.remove();
       map.current = null;
     };
@@ -560,6 +573,44 @@ const MapboxViewer: React.FC = () => {
       map.current.flyTo({ center: [flyToState.lng, flyToState.lat], zoom: 16 });
     }
   }, [flyToState]);
+
+  useEffect(() => {
+    if (!map.current) return;
+
+    if (!userLocation) {
+      if (userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.remove();
+        userLocationMarkerRef.current = null;
+      }
+      return;
+    }
+
+    if (!userLocationMarkerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'user-location-marker';
+      el.title = 'Lokasi Terkini Anda';
+      el.innerHTML = `
+        <div class="user-location-pulse"></div>
+        <div class="user-location-pulse-delayed"></div>
+        <div class="user-location-dot"></div>
+      `;
+
+      const popup = new mapboxgl.Popup({
+        offset: 14,
+        closeButton: false,
+        className: 'user-location-popup'
+      }).setHTML('<div class="flex items-center gap-1.5 font-semibold text-xs"><span>📍</span><span>Lokasi Anda Saat Ini</span></div>');
+
+      userLocationMarkerRef.current = new mapboxgl.Marker({
+        element: el,
+        anchor: 'center',
+      }).setPopup(popup);
+    }
+
+    userLocationMarkerRef.current
+      .setLngLat([userLocation.lng, userLocation.lat])
+      .addTo(map.current);
+  }, [userLocation]);
 
   return (
     <div className="w-full h-full relative z-0">
