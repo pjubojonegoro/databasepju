@@ -525,20 +525,28 @@ const MapboxViewer: React.FC = () => {
 
     // Update displayed count to match visible features
     if (mapDataRef.current) {
-      const visible = mapDataRef.current.combinedFeatures.filter((f: any) => {
+      // Optmization: Use a simple loop with a counter instead of .filter()
+      // This avoids allocating a throwaway array of up to 50k elements
+      // every time a filter changes, reducing memory pressure & GC pauses.
+      let visibleCount = 0;
+      const features = mapDataRef.current.combinedFeatures;
+      const len = features.length;
+
+      for (let i = 0; i < len; i++) {
+        const f = features[i];
         const src = f.properties?._sourceTable;
         const kgr = f.properties?.kategori;
-        if (ds === 'Lampu' && src !== 'lampu') return false;
-        if (ds === 'Panel' && src !== 'panel') return false;
-        if (kat !== 'Semua' && kgr !== kat) return false;
-        if (th !== 'Semua' && String(f.properties?.thpasang) !== th) return false;
-        if (fDesa !== 'Semua' && f.properties?.desakel !== fDesa) return false;
-        if (fKec !== 'Semua' && f.properties?.kecamatan !== fKec) return false;
-        if (fJL !== 'Semua' && f.properties?.jenis_lampu !== fJL) return false;
-        if (fTiang !== 'Semua' && f.properties?.tiang !== fTiang) return false;
-        return true;
-      });
-      setCount(visible.length);
+        if (ds === 'Lampu' && src !== 'lampu') continue;
+        if (ds === 'Panel' && src !== 'panel') continue;
+        if (kat !== 'Semua' && kgr !== kat) continue;
+        if (th !== 'Semua' && String(f.properties?.thpasang) !== th) continue;
+        if (fDesa !== 'Semua' && f.properties?.desakel !== fDesa) continue;
+        if (fKec !== 'Semua' && f.properties?.kecamatan !== fKec) continue;
+        if (fJL !== 'Semua' && f.properties?.jenis_lampu !== fJL) continue;
+        if (fTiang !== 'Semua' && f.properties?.tiang !== fTiang) continue;
+        visibleCount++;
+      }
+      setCount(visibleCount);
     }
   };
 
