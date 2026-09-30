@@ -1,17 +1,19 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useDeferredValue } from 'react';
 import { Search, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
 const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
   const [query, setQuery] = useState('');
+  // useDeferredValue keeps the typing experience responsive by deferring the heavy filtering logic
+  const deferredQuery = useDeferredValue(query);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { globalSearchData, triggerFlyTo } = useAppStore();
 
   const results = useMemo(() => {
-    if (!query || query.length < 2) return [];
-    const lowerQuery = query.toLowerCase();
+    if (!deferredQuery || deferredQuery.length < 2) return [];
+    const lowerQuery = deferredQuery.toLowerCase();
 
     // 1. Cari desa dari list desa yang sudah di-ekstrak tipis
     const desaFromPoints = globalSearchData.desaList
@@ -49,7 +51,7 @@ const GlobalSearch: React.FC<{ isMobile?: boolean }> = ({ isMobile }) => {
       }));
 
     return [...desaFromPoints, ...ruas, ...panels];
-  }, [query, globalSearchData]);
+  }, [deferredQuery, globalSearchData]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
