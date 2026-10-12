@@ -14,12 +14,19 @@
 /* ─── react-spring-bottom-sheet: dark theme to match DesktopPopup ─── */
 [data-rsbs-overlay] {
   z-index: 30;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
 }
 
 [data-rsbs-backdrop] {
   background-color: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  -webkit-user-select: none !important;
+  user-select: none !important;
 }
 
 [data-rsbs-root] {
@@ -31,7 +38,16 @@
   --rsbs-overlay-rounded: 20px;
 }
 
-/* Sheet body container */
+/* Sheet body container - enable native text selection and touch-callout on mobile */
+[data-rsbs-scroll],
+[data-rsbs-scroll] * {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
 [data-rsbs-scroll] {
   background: var(--rsbs-bg);
   -webkit-overflow-scrolling: touch;
@@ -43,6 +59,35 @@
   border-bottom: 1px solid rgba(51, 65, 85, 0.5); /* slate-700/50 */
   padding: 12px 20px;
   box-shadow: none;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Drag indicator handle should not be text-selectable */
+[data-rsbs-header]:before {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Buttons should not trigger unwanted text selection on tap */
+[data-rsbs-overlay] button,
+[data-rsbs-overlay] button * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Utility class for explicitly selectable text */
+.selectable-text,
+.select-text {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+  cursor: text;
 }
 
 /* Override text colours inside the bottom sheet */

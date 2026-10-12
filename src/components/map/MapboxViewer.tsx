@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { useAppStore } from '../../store/useAppStore';
-import { fetchLampuDataGeoJSON, fetchPanelDataGeoJSON, supabase } from '../../services/supabase';
+import { fetchLampuDataGeoJSON, fetchPanelDataGeoJSON, supabase, subscribeDataUpdate, updateCachedPoint } from '../../services/supabase';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 mapboxgl.accessToken = (import.meta.env.VITE_MAPBOX_TOKEN || import.meta.env.NEXT_PUBLIC_MAPBOX_TOKEN || '') as string;
@@ -78,6 +78,7 @@ const MapboxViewer: React.FC = () => {
                     .eq('id', sp.id);
                  
                  if (error) throw error;
+                 await updateCachedPoint(sp._sourceTable, sp.id, { longitude: lngLat.lng, latitude: lngLat.lat });
                  
                  if (mapDataRef.current) {
                     const features = mapDataRef.current.combinedFeatures;
@@ -249,10 +250,16 @@ const MapboxViewer: React.FC = () => {
         // Placeholder for ruas jalan vector tiles
 
         // 3. TITIK LAMPU/PANEL (Paling Atas)
-        if (!m.getSource('all-points')) {
+        const allPointsSource = m.getSource('all-points') as mapboxgl.GeoJSONSource;
+        if (!allPointsSource) {
           m.addSource('all-points', {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: data.combinedFeatures }
+          });
+        } else {
+          allPointsSource.setData({
+            type: 'FeatureCollection',
+            features: data.combinedFeatures
           });
         }
 
@@ -351,6 +358,80 @@ const MapboxViewer: React.FC = () => {
       }
     });
 
+    let cachedRuasSearch: { name: string; lng: number; lat: number }[] = [];
+
+    const syncStoreMetadata = (combinedFeatures: any[], ruasSearch: any[]) => {
+      setDisplayedCount(combinedFeatures.length);
+
+      const desaSet = new Map<string, any>();
+      combinedFeatures.forEach((p: any) => {
+        const desakel = p.properties?.desakel;
+        const kecamatan = p.properties?.kecamatan;
+        if (desakel && typeof desakel === 'string') {
+          const name = desakel.toLowerCase();
+          const key = `${name}-${kecamatan?.toLowerCase() || ''}`;
+          if (!desaSet.has(key) && p.geometry?.coordinates) {
+            desaSet.set(key, {
+              name: desakel,
+              kecamatan: kecamatan || '',
+              lng: p.geometry.coordinates[0],
+              lat: p.geometry.coordinates[1]
+            });
+          }
+        }
+      });
+
+      const yearsSet = new Set<string>();
+      const jenisLampuSet = new Set<string>();
+      const tiangSet = new Set<string>();
+      const panelSearchData: { id_pelanggan: string; nama_pelanggan: string; lng: number; lat: number }[] = [];
+      
+      combinedFeatures.forEach((p: any) => {
+        if (p.properties?.thpasang) {
+          yearsSet.add(String(p.properties.thpasang));
+        }
+        if (p.properties?._sourceTable === 'lampu') {
+          const jl = p.properties.jenis_lampu ? String(p.properties.jenis_lampu).trim() : '';
+          if (jl && jl !== '-' && jl !== '- -') {
+            jenisLampuSet.add(jl);
+          }
+          const tg = p.properties.tiang ? String(p.properties.tiang).trim() : '';
+          if (tg && tg !== '-' && tg !== '- -') {
+            tiangSet.add(tg);
+          }
+        }
+        if (p.properties?._sourceTable === 'panel' && p.geometry?.coordinates) {
+          const id_pelanggan = p.properties.id_pelanggan || '';
+          const nama_pelanggan = p.properties.nama_pelanggan || '';
+          if (id_pelanggan || nama_pelanggan) {
+            panelSearchData.push({
+              id_pelanggan,
+              nama_pelanggan,
+              lng: p.geometry.coordinates[0],
+              lat: p.geometry.coordinates[1]
+            });
+          }
+        }
+      });
+
+      useAppStore.getState().setAvailableYears(Array.from(yearsSet).sort().reverse());
+      useAppStore.getState().setAvailableJenisLampu(Array.from(jenisLampuSet).sort());
+      useAppStore.getState().setAvailableJenisTiang(Array.from(tiangSet).sort());
+
+      const desaList = Array.from(desaSet.values());
+      const allDesa = Array.from(new Set(desaList.map(d => d.name))).sort();
+      const allKecamatan = Array.from(new Set(desaList.map(d => d.kecamatan).filter(k => k))).sort();
+      
+      useAppStore.getState().setAvailableDesaKel(allDesa);
+      useAppStore.getState().setAvailableKecamatan(allKecamatan);
+
+      useAppStore.getState().setGlobalSearchData({
+        desaList: desaList,
+        ruasJalan: ruasSearch,
+        panelList: panelSearchData
+      });
+    };
+
     const loadInitialData = async () => {
       try {
         const [lampuData, panelData] = await Promise.all([
@@ -358,89 +439,18 @@ const MapboxViewer: React.FC = () => {
           fetchPanelDataGeoJSON()
         ]);
         const combinedFeatures = [...lampuData.features, ...panelData.features];
-        setDisplayedCount(combinedFeatures.length);
 
-        // Batas desa kini dari vector tiles — tidak perlu fetch file JS
-
-        let ruasSearch: { name: string; lng: number; lat: number }[] = [];
         try {
           const res = await fetch('/ruasjalan_index.json');
           if (res.ok) {
-            ruasSearch = await res.json();
+            cachedRuasSearch = await res.json();
           }
         } catch (e) {
           console.error("Failed to load ruasjalan_index.json", e);
         }
 
         mapDataRef.current = { combinedFeatures, ruasJalanData: null };
-        // Optimize: Extract only what's necessary for GlobalSearch to avoid huge JSONs in Zustand
-        const desaSet = new Map<string, any>();
-        combinedFeatures.forEach((p: any) => {
-          const desakel = p.properties?.desakel;
-          const kecamatan = p.properties?.kecamatan;
-          if (desakel && typeof desakel === 'string') {
-            const name = desakel.toLowerCase();
-            const key = `${name}-${kecamatan?.toLowerCase() || ''}`;
-            if (!desaSet.has(key) && p.geometry?.coordinates) {
-              desaSet.set(key, {
-                name: desakel,
-                kecamatan: kecamatan || '',
-                lng: p.geometry.coordinates[0],
-                lat: p.geometry.coordinates[1]
-              });
-            }
-          }
-        });
-
-
-        const yearsSet = new Set<string>();
-        const jenisLampuSet = new Set<string>();
-        const tiangSet = new Set<string>();
-        const panelSearchData: { id_pelanggan: string; nama_pelanggan: string; lng: number; lat: number }[] = [];
-        
-        combinedFeatures.forEach((p: any) => {
-          if (p.properties?.thpasang) {
-            yearsSet.add(String(p.properties.thpasang));
-          }
-          if (p.properties?._sourceTable === 'lampu') {
-            const jl = p.properties.jenis_lampu ? String(p.properties.jenis_lampu).trim() : '';
-            if (jl && jl !== '-' && jl !== '- -') {
-              jenisLampuSet.add(jl);
-            }
-            const tg = p.properties.tiang ? String(p.properties.tiang).trim() : '';
-            if (tg && tg !== '-' && tg !== '- -') {
-              tiangSet.add(tg);
-            }
-          }
-          if (p.properties?._sourceTable === 'panel' && p.geometry?.coordinates) {
-            const id_pelanggan = p.properties.id_pelanggan || '';
-            const nama_pelanggan = p.properties.nama_pelanggan || '';
-            if (id_pelanggan || nama_pelanggan) {
-              panelSearchData.push({
-                id_pelanggan,
-                nama_pelanggan,
-                lng: p.geometry.coordinates[0],
-                lat: p.geometry.coordinates[1]
-              });
-            }
-          }
-        });
-        useAppStore.getState().setAvailableYears(Array.from(yearsSet).sort().reverse());
-        useAppStore.getState().setAvailableJenisLampu(Array.from(jenisLampuSet).sort());
-        useAppStore.getState().setAvailableJenisTiang(Array.from(tiangSet).sort());
-
-        const desaList = Array.from(desaSet.values());
-        const allDesa = Array.from(new Set(desaList.map(d => d.name))).sort();
-        const allKecamatan = Array.from(new Set(desaList.map(d => d.kecamatan).filter(k => k))).sort();
-        
-        useAppStore.getState().setAvailableDesaKel(allDesa);
-        useAppStore.getState().setAvailableKecamatan(allKecamatan);
-
-        useAppStore.getState().setGlobalSearchData({
-          desaList: desaList,
-          ruasJalan: ruasSearch,
-          panelList: panelSearchData
-        });
+        syncStoreMetadata(combinedFeatures, cachedRuasSearch);
         addSourcesAndLayers();
         setIsLoading(false);
       } catch (err: any) {
@@ -452,7 +462,33 @@ const MapboxViewer: React.FC = () => {
 
     map.current.on('load', loadInitialData);
 
+    // Subscribe to background data revalidation updates
+    const unsubscribeData = subscribeDataUpdate((type, newData) => {
+      if (!mapDataRef.current) return;
+      console.log(`[MapboxViewer] Pembaruan latar belakang diterima untuk ${type}`);
+      const oldFeatures = mapDataRef.current.combinedFeatures;
+      const currentLampu = type === 'lampu'
+        ? newData.features
+        : oldFeatures.filter((f: any) => f.properties?._sourceTable === 'lampu');
+      const currentPanel = type === 'panel'
+        ? newData.features
+        : oldFeatures.filter((f: any) => f.properties?._sourceTable === 'panel');
+
+      const updatedFeatures = [...currentLampu, ...currentPanel];
+      mapDataRef.current = { combinedFeatures: updatedFeatures, ruasJalanData: null };
+
+      if (map.current && map.current.getSource('all-points')) {
+        (map.current.getSource('all-points') as mapboxgl.GeoJSONSource).setData({
+          type: 'FeatureCollection',
+          features: updatedFeatures
+        });
+      }
+      applyFilters();
+      syncStoreMetadata(updatedFeatures, cachedRuasSearch);
+    });
+
     return () => {
+      unsubscribeData();
       if (userLocationMarkerRef.current) {
         userLocationMarkerRef.current.remove();
         userLocationMarkerRef.current = null;

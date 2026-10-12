@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BottomSheet } from 'react-spring-bottom-sheet';
 import { useAppStore } from '../../store/useAppStore';
-import { Layers, Box, SlidersHorizontal, Activity, X, MapPin, Lightbulb, UtilityPole } from 'lucide-react';
+import { Layers, Box, SlidersHorizontal, Activity, X, MapPin, Lightbulb, UtilityPole, RefreshCw } from 'lucide-react';
+import { fetchLampuDataGeoJSON, fetchPanelDataGeoJSON } from '../../services/supabase';
 import 'react-spring-bottom-sheet/dist/style.css';
 
 interface FilterBottomSheetProps {
@@ -10,6 +11,7 @@ interface FilterBottomSheetProps {
 }
 
 const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const {
     basemapStyle, setBasemapStyle,
     showBatasDesa, setShowBatasDesa,
@@ -23,6 +25,21 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
     availableJenisTiang,
     displayedCount, availableDesaKel, availableKecamatan
   } = useAppStore();
+
+  const handleSyncData = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        fetchLampuDataGeoJSON(true),
+        fetchPanelDataGeoJSON(true)
+      ]);
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to refresh data on mobile:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const basemaps = [
     { id: 'default', label: 'Default', url: 'mapbox://styles/dhamarar/clocbtfsj016901pfgucqgix6' },
@@ -54,12 +71,22 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({ open, onDismiss }
               </span>
             </div>
           </div>
-          <button 
-            onClick={onDismiss}
-            className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSyncData}
+              disabled={isRefreshing}
+              className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white active:scale-95 transition-transform"
+              title="Sinkronkan Ulang Data dari Database"
+            >
+              <RefreshCw size={18} className={isRefreshing ? 'animate-spin text-blue-400' : ''} />
+            </button>
+            <button 
+              onClick={onDismiss}
+              className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
       }
     >

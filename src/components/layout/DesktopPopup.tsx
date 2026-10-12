@@ -1,15 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { MapPin, Info, Settings, Calendar, Activity, X, Clipboard, Navigation2, Eye } from 'lucide-react';
+import { MapPin, Info, Settings, Calendar, Activity, X, Navigation2, Eye, Copy, Check } from 'lucide-react';
 import PjuImage from '../ui/PjuImage';
+import { copyToClipboard } from '../../utils/clipboard';
 
 const DesktopPopup: React.FC = () => {
   const { selectedPoint, setSelectedPoint } = useAppStore();
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   if (!selectedPoint) return null;
 
   const title = ('kode' in selectedPoint ? selectedPoint.kode : selectedPoint.id_pelanggan) || 'PJU Unnamed';
   const isLampu = 'jenis_lampu' in selectedPoint;
+  const coordText = `${selectedPoint.latitude.toFixed(6)}, ${selectedPoint.longitude.toFixed(6)}`;
+  const addressText = `${selectedPoint.kecamatan}, ${selectedPoint.desakel}`;
+
+  const handleCopy = async (text: string, field: string) => {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopiedField(field);
+      setTimeout(() => {
+        setCopiedField((curr) => (curr === field ? null : curr));
+      }, 2000);
+    }
+  };
 
   const statusColor =
     selectedPoint.kategori === 'Aktif'
@@ -32,10 +46,42 @@ const DesktopPopup: React.FC = () => {
             <MapPin size={18} className="text-blue-400" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-white text-sm leading-tight truncate">{title}</h2>
-            <p className="text-xs text-slate-400 mt-0.5 truncate">
-              {selectedPoint.kecamatan}, {selectedPoint.desakel}
-            </p>
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-white text-sm leading-tight truncate selectable-text select-text select-all">{title}</h2>
+              <button
+                onClick={() => handleCopy(title, 'title')}
+                className="p-1 rounded text-slate-400 hover:text-white active:scale-95 transition-all flex-shrink-0"
+                title="Salin ID"
+                aria-label="Salin ID"
+              >
+                {copiedField === 'title' ? (
+                  <span className="text-emerald-400 flex items-center gap-1 text-[10px] font-bold">
+                    <Check size={12} /> Tersalin
+                  </span>
+                ) : (
+                  <Copy size={13} />
+                )}
+              </button>
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <p className="text-xs text-slate-400 truncate selectable-text select-text">
+                {addressText}
+              </p>
+              <button
+                onClick={() => handleCopy(addressText, 'address')}
+                className="text-slate-400 hover:text-white active:scale-95 transition-all flex-shrink-0"
+                title="Salin Alamat"
+                aria-label="Salin Alamat"
+              >
+                {copiedField === 'address' ? (
+                  <span className="text-emerald-400 text-[10px] font-semibold flex items-center gap-0.5">
+                    <Check size={11} /> Tersalin
+                  </span>
+                ) : (
+                  <Copy size={11} />
+                )}
+              </button>
+            </div>
           </div>
         </div>
         <button
@@ -94,15 +140,21 @@ const DesktopPopup: React.FC = () => {
         <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/40">
           <p className="text-xs text-slate-500 font-semibold mb-1.5 uppercase tracking-wider">Koordinat</p>
           <div className="flex items-center justify-between gap-2">
-            <span className="font-mono text-xs text-slate-300">
-              {selectedPoint.latitude.toFixed(6)}, {selectedPoint.longitude.toFixed(6)}
+            <span className="font-mono text-xs text-slate-300 selectable-text select-text select-all">
+              {coordText}
             </span>
             <button
-              onClick={() => navigator.clipboard.writeText(`${selectedPoint.latitude}, ${selectedPoint.longitude}`)}
-              className="text-blue-400 hover:text-blue-300 transition-colors flex-shrink-0"
+              onClick={() => handleCopy(coordText, 'coords')}
+              className="text-blue-400 hover:text-blue-300 active:scale-95 transition-all flex items-center gap-1 text-xs flex-shrink-0"
               title="Salin koordinat"
             >
-              <Clipboard size={14} />
+              {copiedField === 'coords' ? (
+                <span className="text-emerald-400 font-semibold flex items-center gap-1 text-xs">
+                  <Check size={14} /> Tersalin!
+                </span>
+              ) : (
+                <Copy size={14} />
+              )}
             </button>
           </div>
         </div>
@@ -144,9 +196,9 @@ const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string;
   <div className="bg-slate-800/50 rounded-lg p-2.5 border border-slate-700/30">
     <div className="flex items-center gap-1.5 text-slate-500 mb-1">
       {icon}
-      <span className="text-xs font-semibold">{label}</span>
+      <span className="text-xs font-semibold selectable-text select-text">{label}</span>
     </div>
-    <div className="text-sm text-slate-200 font-medium pl-5 truncate">{value}</div>
+    <div className="text-sm text-slate-200 font-medium pl-5 truncate selectable-text select-text">{value}</div>
   </div>
 );
 
